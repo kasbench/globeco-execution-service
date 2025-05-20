@@ -4,3 +4,9 @@
 
 [2024-06-10] Request: Execute step 2 of execution-plan.md (configure Flyway with the same configuration as the PostgreSQL database connection).
 
+[2024-06-10] Request: Execute step 3 of execution-plan.md (configure the project to use PostgreSQL and Kafka test containers).
+
+[2024-06-10] Request: Execute step 4 of execution-plan.md (configure a Kafka producer using the requirements in the Kafka section of requirements.md, ensuring the program creates the topic if it doesn't exist).
+
+[2024-06-10] Request: Execute step 5 of execution-plan.md (create a Flyway migration to deploy the schema for this project using the schema in execution-service.sql).
+
