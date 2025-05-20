@@ -10,3 +10,5 @@
 
 [2024-06-10] Request: Execute step 5 of execution-plan.md (create a Flyway migration to deploy the schema for this project using the schema in execution-service.sql).
 
+[2024-06-10] Request: Execute step 6 of execution-plan.md (implement the entity, repository, service interface, and service implementation for execution using the requirements in requirements.md).
+
