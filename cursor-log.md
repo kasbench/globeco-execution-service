@@ -18,3 +18,9 @@
 
 [2024-06-10] Request: Execute step 9 of execution-plan.md (implement unit testing for execution caching).
 
+[2024-06-10] Request: Execute step 10 of execution-plan.md (implement the DTOs in the Data Transfer Objects (DTOs) section of requirements.md).
+
+[2024-06-10] Request: Execute step 11 of execution-plan.md (implement the APIs in the REST API Documentation section of requirements.md).
+
+[2024-06-10] Request: Execute step 12 of execution-plan.md (implement tests for the APIs generated in the previous step).
+
