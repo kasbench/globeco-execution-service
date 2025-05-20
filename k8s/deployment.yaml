@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: globeco-execution-service
+  namespace: globeco
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: globeco-execution-service
+  template:
+    metadata:
+      labels:
+        app: globeco-execution-service
+    spec:
+      containers:
+        - name: globeco-execution-service
+          image: globeco-execution-service:latest
+          ports:
+            - containerPort: 8084
+          resources:
+            requests:
+              cpu: 100m
+              memory: 200Mi
+            limits:
+              cpu: 100m
+              memory: 200Mi
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8084
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 240
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8084
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          startupProbe:
+            httpGet:
+              path: /actuator/health/startup
+              port: 8084
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+      restartPolicy: Always
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: globeco-execution-service
+  namespace: globeco
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: globeco-execution-service
+  minReplicas: 1
+  maxReplicas: 100
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 80 

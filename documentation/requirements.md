@@ -12,7 +12,7 @@ Name of service: Execution Service <br>
 Host: globeco-execution-service <br>
 Port: 8084 <br>
 
-Author: Noah Kriehger <br>
+Author: Noah Krieger <br>
 Email: noah@kasbench.org
 
 ## Technology

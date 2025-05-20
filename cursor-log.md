@@ -26,3 +26,13 @@
 
 [2024-06-10] Request: Execute step 13 of execution-plan.md (modify the POST API and corresponding test to perform the specified steps in a transaction: save to DB, set sentTimestamp, send to Kafka, update DB with sentTimestamp).
 
+[2024-06-10] Request: Execute step 14 of execution-plan.md (implement liveness, readiness, and startup health checks for Kubernetes deployment).
+
+[2024-06-10] Request: Execute step 15 of execution-plan.md (document the service completely in README.md).
+
+[2024-06-10] Request: Execute step 16 of execution-plan.md (create a Dockerfile for this application).
+
+[2024-06-10] Request: Execute step 17 of execution-plan.md (create all files necessary to deploy this application as a service to Kubernetes, including liveness, readiness, and startup probes, with the specified resource limits and scaling. Place files in the k8s directory).
+
+[2024-06-10] Request: Execute steps 18 and 19 of execution-plan.md (expose the OpenAPI schema as an endpoint using Springdoc OpenAPI and add the URLs for the OpenAPI schema to the README.md file).
+
