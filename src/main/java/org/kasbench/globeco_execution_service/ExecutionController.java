@@ -72,17 +72,17 @@ public class ExecutionController {
         );
     }
 
-    private Execution fromPostDTO(ExecutionPostDTO dto) {
-        return new Execution(
-                null,
-                dto.getExecutionStatus(),
-                dto.getTradeType(),
-                dto.getDestination(),
-                dto.getQuantity(),
-                dto.getLimitPrice(),
-                null, // receivedTimestamp set in controller
-                null, // sentTimestamp
-                dto.getVersion()
-        );
-    }
+    // private Execution fromPostDTO(ExecutionPostDTO dto) {
+    //     return new Execution(
+    //             null,
+    //             dto.getExecutionStatus(),
+    //             dto.getTradeType(),
+    //             dto.getDestination(),
+    //             dto.getQuantity(),
+    //             dto.getLimitPrice(),
+    //             null, // receivedTimestamp set in controller
+    //             null, // sentTimestamp
+    //             dto.getVersion()
+    //     );
+    // }
 } 

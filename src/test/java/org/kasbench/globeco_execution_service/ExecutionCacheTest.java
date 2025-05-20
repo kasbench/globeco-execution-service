@@ -23,6 +23,7 @@ class ExecutionCacheTest {
     @Autowired
     private CacheManager cacheManager;
 
+    @SuppressWarnings("null")
     @Test
     void testFindByIdCaching() {
         Execution execution = new Execution(null, "CACHED", "BUY", "LSE", new BigDecimal("10.00"), null, OffsetDateTime.now(), null, null);
@@ -43,6 +44,7 @@ class ExecutionCacheTest {
         assertThat(((Execution) cached).getId()).isEqualTo(saved.getId());
     }
 
+    @SuppressWarnings("null")
     @Test
     void testFindAllCaching() {
         executionService.save(new Execution(null, "CACHED", "SELL", "LSE", new BigDecimal("20.00"), null, OffsetDateTime.now(), null, null));
