@@ -28,6 +28,7 @@ class ExecutionCacheTest {
     void testFindByIdCaching() {
         Execution execution = new Execution(null, "CACHED", "BUY", "LSE", new BigDecimal("10.00"), null, OffsetDateTime.now(), null, null);
         Execution saved = executionService.save(execution);
+        @SuppressWarnings("unused")
         String cacheKey = String.valueOf(saved.getId());
 
         // First call - should load from DB
