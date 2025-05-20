@@ -12,3 +12,5 @@
 
 [2024-06-10] Request: Execute step 6 of execution-plan.md (implement the entity, repository, service interface, and service implementation for execution using the requirements in requirements.md).
 
+[2024-06-10] Request: Execute step 7 of execution-plan.md (implement unit tests for the entity, repository, service interface, and service implementation for execution, using test containers).
+
