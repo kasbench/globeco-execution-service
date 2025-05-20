@@ -33,7 +33,7 @@ Log each step in @cursor-log.md.
 14. We will be deploying this service to Kubernetes.  Please implement liveness, readiness, and startup health checks.  
 15. Please document the service completely in README.md.
 16. Please create a Dockerfile for this application.  
-17. Please create all the files necessary to deploy to this application as a service to Kubernetes.  Please include the liveness, readiness, and startup probes you just created.  The deployment should start with one instance of the service and should scale up to a maximum of 100 instances.  It should have up 100 millicores and 200 MiB of memory.  The liveness probe should have a timeout (`timeoutSeconds`) of 240 seconds.  The name of the service is `globeco-execution-service` in the `globeco` namespace.  You do not need to create the namespace.
+17. Please create all the files necessary to deploy to this application as a service to Kubernetes.  Please include the liveness, readiness, and startup probes you just created.  The deployment should start with one instance of the service and should scale up to a maximum of 100 instances.  It should have up 100 millicores and 200 MiB of memory.  The liveness probe should have a timeout (`timeoutSeconds`) of 240 seconds.  The name of the service is `globeco-execution-service` in the `globeco` namespace.  You do not need to create the namespace.  Please put files in the k8s directory.
 18. Please expose the OpenAPI schema as an endpoint using Springdoc OpenAPI. 
 19. Please add the URLS for the OpenAPI schema to the README.md file
 
