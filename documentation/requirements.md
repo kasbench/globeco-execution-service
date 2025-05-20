@@ -2,15 +2,15 @@
 
 ## Background
 
-This document provides requirements for the Trade Service.  This service is designed to manage trades as part of a portfolio management application.
+This document provides requirements for the Execution Service.  This service is designed as a bridge between the trading service and the fix engine.  It receives trades synchronously from the trading service and sends them to the FIX engine as Kafka events.
 
 This microservice will be deployed on Kubernetes 1.33.
 
 This microservice is part of the GlobeCo suite of applications for benchmarking Kubernetes autoscaling.
 
-Name of service: Trade Service <br>
-Host: globeco-trade-service <br>
-Port: 8082 <br>
+Name of service: Execution Service <br>
+Host: globeco-execution-service <br>
+Port: 8084 <br>
 
 Author: Noah Kriehger <br>
 Email: noah@kasbench.org
@@ -32,6 +32,8 @@ Email: noah@kasbench.org
 | Spring Boot Starter Test | (from BOM) | For testing |
 | PostgreSQL (Database) | 17 | As specified in [globeco-trade-service-postgresql](https://github.com/kasbench/globeco-trade-service-postgresql) |
 | Caffeine | 3.1.8 | In-memory caching provider for Spring's caching abstraction (5 minute TTL) |
+| Spring Kafka | (from BOM) | Kafka support
+---
 
 Notes:
 - (from BOM) means the version is managed by the Spring Boot BOM (Bill of Materials) and will match the Spring Boot version unless overridden.
@@ -45,19 +47,19 @@ Notes:
 
 | Name | Host | Port | Description |
 | --- | --- | --- | --- |
-Security Service | globeco-security-service | 8000 | Manages securities such as stocks, bonds, and options |
-| Order Service | globeco-order-service | 8001 |
+Kafka | globeco-execution-service-kafka-kafka-1 | 9092 | Kafka cluster |
+---
 
 
 ## Caching
 - Use Spring's caching abstraction for security, blotter, trade_type, trade_status, execution_status
-- Caches should have a 5 minute EOL
-- Initially, all caches should be with in-memory caching
+- Caches should have a 5 minute TTL
+
 
 
 ## Database Information
 
-The database is at globeco-trade-service-postgresql:32800
+The database is at globeco-execution-service-postgresql:5436
 The database is the default `postgres` database.
 The schema is the default `public` schema.
 The owner of all database objects is `postgres`.
