@@ -40,6 +40,7 @@ class ExecutionControllerTest {
                 .content(json))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").exists())
+                .andExpect(jsonPath("$.sentTimestamp").exists())
                 .andReturn().getResponse().getContentAsString();
         ExecutionDTO created = objectMapper.readValue(response, ExecutionDTO.class);
         // Get by ID

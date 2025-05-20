@@ -24,3 +24,5 @@
 
 [2024-06-10] Request: Execute step 12 of execution-plan.md (implement tests for the APIs generated in the previous step).
 
+[2024-06-10] Request: Execute step 13 of execution-plan.md (modify the POST API and corresponding test to perform the specified steps in a transaction: save to DB, set sentTimestamp, send to Kafka, update DB with sentTimestamp).
+

@@ -8,4 +8,5 @@ public interface ExecutionService {
     Optional<Execution> findById(Integer id);
     List<Execution> findAll();
     void deleteById(Integer id, Integer version);
+    ExecutionDTO createAndSendExecution(ExecutionPostDTO postDTO);
 } 

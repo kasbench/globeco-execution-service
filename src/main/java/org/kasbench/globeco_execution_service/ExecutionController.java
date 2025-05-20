@@ -31,11 +31,8 @@ public class ExecutionController {
 
     @PostMapping("/blotters")
     public ResponseEntity<ExecutionDTO> createExecution(@RequestBody ExecutionPostDTO postDTO) {
-        Execution execution = fromPostDTO(postDTO);
-        // receivedTimestamp is required
-        execution.setReceivedTimestamp(java.time.OffsetDateTime.now());
-        Execution saved = executionService.save(execution);
-        return new ResponseEntity<>(toDTO(saved), HttpStatus.CREATED);
+        ExecutionDTO dto = executionService.createAndSendExecution(postDTO);
+        return new ResponseEntity<>(dto, HttpStatus.CREATED);
     }
 
     @PutMapping("/blotter/{id}")
