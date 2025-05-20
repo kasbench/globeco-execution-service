@@ -54,11 +54,9 @@ kafka.topic.orders=orders
 
 | Method | Path                  | Request Body         | Response Body        | Description                       |
 |--------|-----------------------|---------------------|----------------------|-----------------------------------|
-| GET    | /api/v1/execution      |                     | [ExecutionDTO]         | List all executions                 |
-| GET    | /api/v1/blotter/{id} |                     | ExecutionDTO           | Get an execution by ID               |
-| POST   | /api/v1/blotters      | ExecutionPostDTO   | ExecutionDTO           | Create a new execution              |
-| PUT    | /api/v1/blotter/{id} | ExecutionPostDTO          | ExecutionDTO           | Update an existing execution        |
-| DELETE | /api/v1/blotter/{id}?version={version} | |                      | Delete an execution by ID            |
+| GET    | /api/v1/executions      |                     | [ExecutionDTO]         | List all executions                 |
+| GET    | /api/v1/execitopm/{id} |                     | ExecutionDTO           | Get an execution by ID               |
+| POST   | /api/v1/executions      | ExecutionPostDTO   | ExecutionDTO           | Create a new execution              |
 
 ### Data Transfer Objects
 - `ExecutionPostDTO`: Used for creating/updating executions

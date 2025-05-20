@@ -167,9 +167,7 @@ Table execution maps to resource Execution.
 
 | Method | Path                  | Request Body         | Response Body        | Description                       |
 |--------|-----------------------|---------------------|----------------------|-----------------------------------|
-| GET    | /api/v1/execution      |                     | [BlotterDTO]         | List all blotters                 |
-| GET    | /api/v1/blotter/{id} |                     | BlotterDTO           | Get a blotter by ID               |
-| POST   | /api/v1/blotters      | BlotterDTO (POST)   | BlotterDTO           | Create a new blotter              |
-| PUT    | /api/v1/blotter/{id} | BlotterDTO          | BlotterDTO           | Update an existing blotter        |
-| DELETE | /api/v1/blotter/{id}?version={version} | |                      | Delete a blotter by ID            |
+| GET    | /api/v1/execution      |                     | [Execution DTO]         | List all execitopms                 |
+| GET    | /api/v1/execitopm/{id} |                     | ExecutionDTO           | Get a blotter by ID               |
+| POST   | /api/v1/executions      | ExecutionPostDTO  | ExecutionDTO           | Create a new execution              |
 
