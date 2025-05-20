@@ -14,3 +14,7 @@
 
 [2024-06-10] Request: Execute step 7 of execution-plan.md (implement unit tests for the entity, repository, service interface, and service implementation for execution, using test containers).
 
+[2024-06-10] Request: Execute step 8 of execution-plan.md (implement caching for execution using Spring's caching abstraction with Caffeine, 5 minute TTL, as required).
+
+[2024-06-10] Request: Execute step 9 of execution-plan.md (implement unit testing for execution caching).
+

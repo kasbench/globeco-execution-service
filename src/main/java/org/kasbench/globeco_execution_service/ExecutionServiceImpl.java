@@ -3,6 +3,7 @@ package org.kasbench.globeco_execution_service;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.cache.annotation.Cacheable;
 
 import java.util.List;
 import java.util.Optional;
@@ -23,12 +24,14 @@ public class ExecutionServiceImpl implements ExecutionService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "execution", key = "#id")
     public Optional<Execution> findById(Integer id) {
         return executionRepository.findById(id);
     }
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "execution", key = "'all'")
     public List<Execution> findAll() {
         return executionRepository.findAll();
     }
