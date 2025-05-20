@@ -19,7 +19,7 @@
 | quantity | decimal(18,8) |  |  |  | &#10003; |  |  |
 | limit_price | decimal(18,8) |  |  |  |  |  |  |
 | received_timestamp | timestamptz |  |  |  | &#10003; |  |  |
-| sent_timestamp | timestamptz |  |  |  | &#10003; |  |  |
+| sent_timestamp | timestamptz |  |  |  |  |  |  |
 | version | integer |  |  |  | &#10003; | 1 |  |
 
 #### Constraints
@@ -31,6 +31,6 @@
 
 ---
 
-Generated at _2025-05-20T11:34:36_ by **pgModeler 1.2.0-beta1**
+Generated at _2025-05-20T15:48:31_ by **pgModeler 1.2.0-beta1**
 [PostgreSQL Database Modeler - pgmodeler.io ](https://pgmodeler.io)
 Copyright © 2006 - 2025 Raphael Araújo e Silva 

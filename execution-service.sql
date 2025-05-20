@@ -7,10 +7,7 @@
 -- ** Database creation must be performed outside a multi lined SQL file. 
 -- ** These commands were put in this file only as a convenience.
 
--- object: new_database | type: DATABASE --
--- DROP DATABASE IF EXISTS new_database;
-CREATE DATABASE new_database;
--- ddl-end --
+
 
 
 SET search_path TO pg_catalog,public;
@@ -26,7 +23,7 @@ CREATE TABLE public.execution (
 	quantity decimal(18,8) NOT NULL,
 	limit_price decimal(18,8),
 	received_timestamp timestamptz NOT NULL,
-	sent_timestamp timestamptz NOT NULL,
+	sent_timestamp timestamptz,
 	version integer NOT NULL DEFAULT 1,
 	CONSTRAINT execution_pk PRIMARY KEY (id)
 );
