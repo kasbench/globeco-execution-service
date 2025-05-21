@@ -23,7 +23,7 @@ public class ExecutionController {
     }
 
     @GetMapping("/execution/{id}")
-    public ResponseEntity<ExecutionDTO> getExecutionById(@PathVariable Integer id) {
+    public ResponseEntity<ExecutionDTO> getExecutionById(@PathVariable("id") Integer id) {
         Optional<Execution> execution = executionService.findById(id);
         return execution.map(value -> ResponseEntity.ok(toDTO(value)))
                 .orElseGet(() -> ResponseEntity.notFound().build());

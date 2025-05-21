@@ -30,7 +30,7 @@ public class ExecutionServiceImpl implements ExecutionService {
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(value = "execution", key = "#id")
+    @Cacheable(value = "execution", key = "#a0")
     public Optional<Execution> findById(Integer id) {
         return executionRepository.findById(id);
     }
