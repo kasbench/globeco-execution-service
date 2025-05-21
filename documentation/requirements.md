@@ -88,6 +88,7 @@ The owner of all database objects is `postgres`.
 | execution_status | varchar(20) |  |  |  | &#10003; |  |  |
 | trade_type | varchar(10) |  |  |  | &#10003; |  |  |
 | destination | varchar(20) |  |  |  | &#10003; |  |  |
+| security_id | char(24) |  |  |  | &#10003; |  |  |
 | quantity | decimal(18,8) |  |  |  | &#10003; |  |  |
 | limit_price | decimal(18,8) |  |  |  |  |  |  |
 | received_timestamp | timestamptz |  |  |  | &#10003; |  |  |
@@ -116,6 +117,7 @@ Represents an execution.
 | executionStatus | String | No |
 | tradeType | String | No |
 | destination | String | No |
+| securityId | String | No |
 | quantity | BigDecimal | No |
 | limitPrice | BigDecimal | Yes |
 | version         | Integer | No       | Optimistic locking version number  |
@@ -130,6 +132,7 @@ Represents an execution.
 | executionStatus | String | No |
 | tradeType | String | No |
 | destination | String | No |
+| securityId | String | No |
 | quantity | BigDecimal | No |
 | limitPrice | BigDecimal | Yes |
 | receivedTimestamp | OffsetDateTime  | No |
@@ -152,6 +155,7 @@ Table execution maps to resource Execution.
 | execution_status | executionStatus |
 | trade_type | tradeType |
 | destination | destination |
+| security_id | securityId |
 | quantity | quantity |
 | limit_price | limitPrice |
 | received_timestamp | receivedTimestamp |

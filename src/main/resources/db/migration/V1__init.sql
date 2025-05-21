@@ -5,6 +5,7 @@ CREATE TABLE public.execution (
     execution_status varchar(20) NOT NULL,
     trade_type varchar(10) NOT NULL,
     destination varchar(20) NOT NULL,
+    security_id char(24) NOT NULL,
     quantity decimal(18,8) NOT NULL,
     limit_price decimal(18,8),
     received_timestamp timestamptz NOT NULL,

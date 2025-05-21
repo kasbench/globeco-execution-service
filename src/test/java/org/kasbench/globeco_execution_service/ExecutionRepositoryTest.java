@@ -21,7 +21,7 @@ class ExecutionRepositoryTest {
 
     @Test
     void testSaveAndFindById() {
-        Execution execution = new Execution(null, "NEW", "BUY", "NYSE", new BigDecimal("100.00"), new BigDecimal("10.50"), OffsetDateTime.now(), null, 1);
+        Execution execution = new Execution(null, "NEW", "BUY", "NYSE", "SEC123456789012345678901", new BigDecimal("100.00"), new BigDecimal("10.50"), OffsetDateTime.now(), null, 1);
         Execution saved = executionRepository.save(execution);
         Optional<Execution> found = executionRepository.findById(saved.getId());
         assertThat(found).isPresent();
@@ -30,7 +30,7 @@ class ExecutionRepositoryTest {
 
     @Test
     void testDelete() {
-        Execution execution = new Execution(null, "NEW", "SELL", "NASDAQ", new BigDecimal("50.00"), null, OffsetDateTime.now(), null, 1);
+        Execution execution = new Execution(null, "NEW", "SELL", "NASDAQ", "SEC123456789012345678901", new BigDecimal("50.00"), null, OffsetDateTime.now(), null, 1);
         Execution saved = executionRepository.save(execution);
         executionRepository.deleteById(saved.getId());
         assertThat(executionRepository.findById(saved.getId())).isNotPresent();

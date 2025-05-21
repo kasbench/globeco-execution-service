@@ -42,6 +42,7 @@ public class ExecutionController {
                 execution.getExecutionStatus(),
                 execution.getTradeType(),
                 execution.getDestination(),
+                execution.getSecurityId(),
                 execution.getQuantity(),
                 execution.getLimitPrice(),
                 execution.getReceivedTimestamp(),

@@ -32,7 +32,7 @@ class ExecutionControllerTest {
 
     @Test
     void testCreateAndGetExecution() throws Exception {
-        ExecutionPostDTO postDTO = new ExecutionPostDTO("NEW", "BUY", "NYSE", new BigDecimal("100.00"), new BigDecimal("10.00"), 1);
+        ExecutionPostDTO postDTO = new ExecutionPostDTO("NEW", "BUY", "NYSE", "SEC123456789012345678901", new BigDecimal("100.00"), new BigDecimal("10.00"), 1);
         String json = objectMapper.writeValueAsString(postDTO);
         // Create
         String response = mockMvc.perform(post("/api/v1/executions")
@@ -51,7 +51,7 @@ class ExecutionControllerTest {
 
     @Test
     void testGetAllExecutions() throws Exception {
-        executionService.save(new Execution(null, "NEW", "SELL", "NASDAQ", new BigDecimal("50.00"), null, OffsetDateTime.now(), null, 1));
+        executionService.save(new Execution(null, "NEW", "SELL", "NASDAQ", "SEC123456789012345678901", new BigDecimal("50.00"), null, OffsetDateTime.now(), null, 1));
         mockMvc.perform(get("/api/v1/executions"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").exists());

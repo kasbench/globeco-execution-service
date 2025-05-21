@@ -7,7 +7,10 @@
 -- ** Database creation must be performed outside a multi lined SQL file. 
 -- ** These commands were put in this file only as a convenience.
 
-
+-- object: new_database | type: DATABASE --
+-- DROP DATABASE IF EXISTS new_database;
+CREATE DATABASE new_database;
+-- ddl-end --
 
 
 SET search_path TO pg_catalog,public;
@@ -20,6 +23,7 @@ CREATE TABLE public.execution (
 	execution_status varchar(20) NOT NULL,
 	trade_type varchar(10) NOT NULL,
 	destination varchar(20) NOT NULL,
+	security_id char(24) NOT NULL,
 	quantity decimal(18,8) NOT NULL,
 	limit_price decimal(18,8),
 	received_timestamp timestamptz NOT NULL,

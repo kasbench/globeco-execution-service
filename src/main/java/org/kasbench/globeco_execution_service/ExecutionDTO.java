@@ -9,6 +9,7 @@ public class ExecutionDTO {
     private String executionStatus;
     private String tradeType;
     private String destination;
+    private String securityId;
     private BigDecimal quantity;
     private BigDecimal limitPrice;
     private OffsetDateTime receivedTimestamp;
@@ -17,11 +18,12 @@ public class ExecutionDTO {
 
     public ExecutionDTO() {}
 
-    public ExecutionDTO(Integer id, String executionStatus, String tradeType, String destination, BigDecimal quantity, BigDecimal limitPrice, OffsetDateTime receivedTimestamp, OffsetDateTime sentTimestamp, Integer version) {
+    public ExecutionDTO(Integer id, String executionStatus, String tradeType, String destination, String securityId, BigDecimal quantity, BigDecimal limitPrice, OffsetDateTime receivedTimestamp, OffsetDateTime sentTimestamp, Integer version) {
         this.id = id;
         this.executionStatus = executionStatus;
         this.tradeType = tradeType;
         this.destination = destination;
+        this.securityId = securityId;
         this.quantity = quantity;
         this.limitPrice = limitPrice;
         this.receivedTimestamp = receivedTimestamp;
@@ -37,6 +39,8 @@ public class ExecutionDTO {
     public void setTradeType(String tradeType) { this.tradeType = tradeType; }
     public String getDestination() { return destination; }
     public void setDestination(String destination) { this.destination = destination; }
+    public String getSecurityId() { return securityId; }
+    public void setSecurityId(String securityId) { this.securityId = securityId; }
     public BigDecimal getQuantity() { return quantity; }
     public void setQuantity(BigDecimal quantity) { this.quantity = quantity; }
     public BigDecimal getLimitPrice() { return limitPrice; }
@@ -57,6 +61,7 @@ public class ExecutionDTO {
                 Objects.equals(executionStatus, that.executionStatus) &&
                 Objects.equals(tradeType, that.tradeType) &&
                 Objects.equals(destination, that.destination) &&
+                Objects.equals(securityId, that.securityId) &&
                 Objects.equals(quantity, that.quantity) &&
                 Objects.equals(limitPrice, that.limitPrice) &&
                 Objects.equals(receivedTimestamp, that.receivedTimestamp) &&
@@ -66,6 +71,6 @@ public class ExecutionDTO {
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, executionStatus, tradeType, destination, quantity, limitPrice, receivedTimestamp, sentTimestamp, version);
+        return Objects.hash(id, executionStatus, tradeType, destination, securityId, quantity, limitPrice, receivedTimestamp, sentTimestamp, version);
     }
 } 

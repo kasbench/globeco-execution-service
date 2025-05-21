@@ -26,7 +26,7 @@ class ExecutionCacheTest {
     @SuppressWarnings("null")
     @Test
     void testFindByIdCaching() {
-        Execution execution = new Execution(null, "CACHED", "BUY", "LSE", new BigDecimal("10.00"), null, OffsetDateTime.now(), null, null);
+        Execution execution = new Execution(null, "CACHED", "BUY", "LSE", "SEC123456789012345678901", new BigDecimal("10.00"), null, OffsetDateTime.now(), null, 1);
         Execution saved = executionService.save(execution);
         @SuppressWarnings("unused")
         String cacheKey = String.valueOf(saved.getId());
@@ -48,7 +48,7 @@ class ExecutionCacheTest {
     @SuppressWarnings("null")
     @Test
     void testFindAllCaching() {
-        executionService.save(new Execution(null, "CACHED", "SELL", "LSE", new BigDecimal("20.00"), null, OffsetDateTime.now(), null, null));
+        executionService.save(new Execution(null, "CACHED", "SELL", "LSE", "SEC123456789012345678901", new BigDecimal("20.00"), null, OffsetDateTime.now(), null, 1));
         // First call - should load from DB
         executionService.findAll();
         // Second call - should hit cache

@@ -21,6 +21,9 @@ public class Execution {
     @Column(name = "destination", nullable = false, length = 20)
     private String destination;
 
+    @Column(name = "security_id", nullable = false, length = 24)
+    private String securityId;
+
     @Column(name = "quantity", nullable = false, precision = 18, scale = 8)
     private BigDecimal quantity;
 
@@ -39,11 +42,12 @@ public class Execution {
 
     public Execution() {}
 
-    public Execution(Integer id, String executionStatus, String tradeType, String destination, BigDecimal quantity, BigDecimal limitPrice, OffsetDateTime receivedTimestamp, OffsetDateTime sentTimestamp, Integer version) {
+    public Execution(Integer id, String executionStatus, String tradeType, String destination, String securityId, BigDecimal quantity, BigDecimal limitPrice, OffsetDateTime receivedTimestamp, OffsetDateTime sentTimestamp, Integer version) {
         this.id = id;
         this.executionStatus = executionStatus;
         this.tradeType = tradeType;
         this.destination = destination;
+        this.securityId = securityId;
         this.quantity = quantity;
         this.limitPrice = limitPrice;
         this.receivedTimestamp = receivedTimestamp;
@@ -59,6 +63,8 @@ public class Execution {
     public void setTradeType(String tradeType) { this.tradeType = tradeType; }
     public String getDestination() { return destination; }
     public void setDestination(String destination) { this.destination = destination; }
+    public String getSecurityId() { return securityId; }
+    public void setSecurityId(String securityId) { this.securityId = securityId; }
     public BigDecimal getQuantity() { return quantity; }
     public void setQuantity(BigDecimal quantity) { this.quantity = quantity; }
     public BigDecimal getLimitPrice() { return limitPrice; }
@@ -79,6 +85,7 @@ public class Execution {
                 Objects.equals(executionStatus, that.executionStatus) &&
                 Objects.equals(tradeType, that.tradeType) &&
                 Objects.equals(destination, that.destination) &&
+                Objects.equals(securityId, that.securityId) &&
                 Objects.equals(quantity, that.quantity) &&
                 Objects.equals(limitPrice, that.limitPrice) &&
                 Objects.equals(receivedTimestamp, that.receivedTimestamp) &&
@@ -88,6 +95,6 @@ public class Execution {
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, executionStatus, tradeType, destination, quantity, limitPrice, receivedTimestamp, sentTimestamp, version);
+        return Objects.hash(id, executionStatus, tradeType, destination, securityId, quantity, limitPrice, receivedTimestamp, sentTimestamp, version);
     }
 } 
