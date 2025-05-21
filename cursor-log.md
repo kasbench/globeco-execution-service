@@ -36,3 +36,19 @@
 
 [2024-06-10] Request: Execute steps 18 and 19 of execution-plan.md (expose the OpenAPI schema as an endpoint using Springdoc OpenAPI and add the URLs for the OpenAPI schema to the README.md file).
 
+[2024-06-10] Request: Switch all tests to use Testcontainers for Kafka, so tests do not hang if Kafka is not available.
+
+[2024-05-21] Added kafka.topic.orders=orders to src/test/resources/application.properties to resolve test failures caused by missing placeholder for Kafka topic in test context.
+
+[2024-06-10] Removed spring.kafka.bootstrap-servers= from src/test/resources/application.properties to allow @DynamicPropertySource to set the value for Testcontainers, resolving the Kafka bootstrap server error in tests.
+
+[2024-06-10] Added spring.kafka.bootstrap-servers= to src/test/resources/application.properties to resolve PlaceholderResolutionException in tests due to missing property required by KafkaProducerConfig. Testcontainers will override this value at runtime.
+
+[2024-06-10] Updated TestcontainersConfiguration to provide a static KafkaContainer and a @DynamicPropertySource for spring.kafka.bootstrap-servers, ensuring correct Kafka bootstrap server injection for all tests and resolving Kafka producer errors in test context.
+
+[2024-06-10] Refactored KafkaProducerConfig to use constructor injection for bootstrapServers and ordersTopic instead of @Value field injection, ensuring correct property resolution in tests with Testcontainers and resolving Kafka producer errors.
+
+[2024-06-10] Updated KafkaProducerConfig to use fallback values in @Value annotations for bootstrapServers and ordersTopic, preventing PlaceholderResolutionException if properties are missing in tests.
+
+[2024-06-10] Removed trailing space from kafka.topic.orders in src/test/resources/application.properties to fix InvalidTopicException in Kafka tests.
+

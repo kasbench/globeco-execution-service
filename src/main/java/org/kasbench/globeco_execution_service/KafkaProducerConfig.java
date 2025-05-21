@@ -19,11 +19,15 @@ import java.util.Map;
 @Configuration
 public class KafkaProducerConfig {
 
-    @Value("${spring.kafka.bootstrap-servers}")
-    private String bootstrapServers;
+    private final String bootstrapServers;
+    private final String ordersTopic;
 
-    @Value("${kafka.topic.orders}")
-    private String ordersTopic;
+    public KafkaProducerConfig(
+            @Value("${spring.kafka.bootstrap-servers:localhost:9092}") String bootstrapServers,
+            @Value("${kafka.topic.orders:orders}") String ordersTopic) {
+        this.bootstrapServers = bootstrapServers;
+        this.ordersTopic = ordersTopic;
+    }
 
     @Bean
     public ProducerFactory<String, ExecutionDTO> executionDtoProducerFactory() {

@@ -1,5 +1,6 @@
 package org.kasbench.globeco_execution_service;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -25,6 +26,7 @@ class ExecutionCacheTest {
 
     @SuppressWarnings("null")
     @Test
+    // @Disabled("Disabled because of cache configuration")
     void testFindByIdCaching() {
         Execution execution = new Execution(null, "CACHED", "BUY", "LSE", "SEC123456789012345678901", new BigDecimal("10.00"), null, OffsetDateTime.now(), null, 1);
         Execution saved = executionService.save(execution);
@@ -47,6 +49,7 @@ class ExecutionCacheTest {
 
     @SuppressWarnings("null")
     @Test
+    // @Disabled("Disabled because of cache configuration")
     void testFindAllCaching() {
         executionService.save(new Execution(null, "CACHED", "SELL", "LSE", "SEC123456789012345678901", new BigDecimal("20.00"), null, OffsetDateTime.now(), null, 1));
         // First call - should load from DB
