@@ -31,7 +31,7 @@ The Execution Service acts as a bridge between the trading service and the FIX e
 Configuration is managed via `src/main/resources/application.properties`:
 
 ```properties
-spring.datasource.url=jdbc:postgresql://globeco-execution-service-postgresql:5436/postgres
+spring.datasource.url=jdbc:postgresql://globeco-execution-service-postgresql:5432/postgres
 spring.datasource.username=postgres
 spring.datasource.password=
 spring.kafka.bootstrap-servers=globeco-execution-service-kafka-kafka-1:9092
