@@ -3,8 +3,6 @@ package org.kasbench.globeco_execution_service;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 
 import java.util.List;
@@ -16,7 +14,7 @@ public class ExecutionServiceImpl implements ExecutionService {
     private final KafkaTemplate<String, ExecutionDTO> kafkaTemplate;
     private final String ordersTopic;
 
-    public ExecutionServiceImpl(ExecutionRepository executionRepository, KafkaTemplate<String, ExecutionDTO> kafkaTemplate, @Value("${kafka.topic.orders}") String ordersTopic) {
+    public ExecutionServiceImpl(ExecutionRepository executionRepository, KafkaTemplate<String, ExecutionDTO> kafkaTemplate, @org.springframework.beans.factory.annotation.Value("${kafka.topic.orders:orders}") String ordersTopic) {
         this.executionRepository = executionRepository;
         this.kafkaTemplate = kafkaTemplate;
         this.ordersTopic = ordersTopic;
@@ -30,14 +28,12 @@ public class ExecutionServiceImpl implements ExecutionService {
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(value = "execution", key = "#a0")
     public Optional<Execution> findById(Integer id) {
         return executionRepository.findById(id);
     }
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(value = "execution", key = "'all'")
     public List<Execution> findAll() {
         return executionRepository.findAll();
     }
