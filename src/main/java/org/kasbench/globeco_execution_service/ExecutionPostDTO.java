@@ -10,17 +10,19 @@ public class ExecutionPostDTO {
     private String securityId;
     private BigDecimal quantity;
     private BigDecimal limitPrice;
+    private Integer tradeServiceExecutionId;
     private Integer version;
 
     public ExecutionPostDTO() {}
 
-    public ExecutionPostDTO(String executionStatus, String tradeType, String destination, String securityId, BigDecimal quantity, BigDecimal limitPrice, Integer version) {
+    public ExecutionPostDTO(String executionStatus, String tradeType, String destination, String securityId, BigDecimal quantity, BigDecimal limitPrice, Integer tradeServiceExecutionId,  Integer version) {
         this.executionStatus = executionStatus;
         this.tradeType = tradeType;
         this.destination = destination;
         this.securityId = securityId;
         this.quantity = quantity;
         this.limitPrice = limitPrice;
+        this.tradeServiceExecutionId = tradeServiceExecutionId;
         this.version = version;
     }
 
@@ -36,6 +38,8 @@ public class ExecutionPostDTO {
     public void setQuantity(BigDecimal quantity) { this.quantity = quantity; }
     public BigDecimal getLimitPrice() { return limitPrice; }
     public void setLimitPrice(BigDecimal limitPrice) { this.limitPrice = limitPrice; }
+    public Integer getTradeServiceExecutionId() { return tradeServiceExecutionId; }
+    public void setTradeServiceExecutionId(Integer tradeServiceExecutionId) { this.tradeServiceExecutionId = tradeServiceExecutionId; } 
     public Integer getVersion() { return version; }
     public void setVersion(Integer version) { this.version = version; }
 
@@ -50,11 +54,12 @@ public class ExecutionPostDTO {
                 Objects.equals(securityId, that.securityId) &&
                 Objects.equals(quantity, that.quantity) &&
                 Objects.equals(limitPrice, that.limitPrice) &&
+                Objects.equals(tradeServiceExecutionId, that.tradeServiceExecutionId) &&
                 Objects.equals(version, that.version);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(executionStatus, tradeType, destination, securityId, quantity, limitPrice, version);
+        return Objects.hash(executionStatus, tradeType, destination, securityId, quantity, limitPrice, tradeServiceExecutionId, version);
     }
 } 
