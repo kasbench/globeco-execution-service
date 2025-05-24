@@ -32,7 +32,7 @@ class ExecutionControllerTest {
 
     @Test
     void testCreateAndGetExecution() throws Exception {
-        ExecutionPostDTO postDTO = new ExecutionPostDTO("NEW", "BUY", "NYSE", "SEC123456789012345678901", new BigDecimal("100.00"), new BigDecimal("10.00"), 1);
+        ExecutionPostDTO postDTO = new ExecutionPostDTO("NEW", "BUY", "NYSE", "SEC123456789012345678901", new BigDecimal("100.00"), new BigDecimal("10.00"), null, 1);
         String json = objectMapper.writeValueAsString(postDTO);
         // Create
         String response = mockMvc.perform(post("/api/v1/executions")
