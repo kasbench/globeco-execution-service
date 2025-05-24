@@ -9,7 +9,7 @@
 
 -- object: new_database | type: DATABASE --
 -- DROP DATABASE IF EXISTS new_database;
-CREATE DATABASE new_database;
+-- CREATE DATABASE new_database;
 -- ddl-end --
 
 
@@ -28,11 +28,12 @@ CREATE TABLE public.execution (
 	limit_price decimal(18,8),
 	received_timestamp timestamptz NOT NULL,
 	sent_timestamp timestamptz,
+	trade_service_execution_id integer,
 	version integer NOT NULL DEFAULT 1,
 	CONSTRAINT execution_pk PRIMARY KEY (id)
 );
 -- ddl-end --
-ALTER TABLE public.execution OWNER TO postgres;
+-- ALTER TABLE public.execution OWNER TO postgres;
 -- ddl-end --
 
 
