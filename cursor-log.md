@@ -52,3 +52,5 @@
 
 [2024-06-10] Removed trailing space from kafka.topic.orders in src/test/resources/application.properties to fix InvalidTopicException in Kafka tests.
 
+2024-06-09: Added a global CORS configuration by creating a new WebConfig class in src/main/java/org/kasbench/globeco_execution_service/WebConfig.java. This configuration allows all origins, methods, and headers for all endpoints, ensuring cross-origin requests are permitted as required.
+
