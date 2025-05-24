@@ -11,6 +11,7 @@ CREATE TABLE public.execution (
     received_timestamp timestamptz NOT NULL,
     sent_timestamp timestamptz,
     version integer NOT NULL DEFAULT 1,
+    trade_service_execution_id integer NULL,
     CONSTRAINT execution_pk PRIMARY KEY (id)
 );
 
