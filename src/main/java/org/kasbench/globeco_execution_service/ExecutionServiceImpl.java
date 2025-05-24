@@ -63,6 +63,7 @@ public class ExecutionServiceImpl implements ExecutionService {
                 postDTO.getLimitPrice(),
                 java.time.OffsetDateTime.now(),
                 null,
+                postDTO.getTradeServiceExecutionId(),
                 postDTO.getVersion()
         );
         execution = executionRepository.save(execution);
@@ -78,6 +79,7 @@ public class ExecutionServiceImpl implements ExecutionService {
                 execution.getLimitPrice(),
                 execution.getReceivedTimestamp(),
                 sentTimestamp,
+                execution.getTradeServiceExecutionId(),
                 execution.getVersion()
         );
         // 3. Send ExecutionDTO to Kafka

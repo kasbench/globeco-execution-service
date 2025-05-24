@@ -14,11 +14,12 @@ public class ExecutionDTO {
     private BigDecimal limitPrice;
     private OffsetDateTime receivedTimestamp;
     private OffsetDateTime sentTimestamp;
+    private Integer tradeServiceExecutionId;
     private Integer version;
 
     public ExecutionDTO() {}
 
-    public ExecutionDTO(Integer id, String executionStatus, String tradeType, String destination, String securityId, BigDecimal quantity, BigDecimal limitPrice, OffsetDateTime receivedTimestamp, OffsetDateTime sentTimestamp, Integer version) {
+    public ExecutionDTO(Integer id, String executionStatus, String tradeType, String destination, String securityId, BigDecimal quantity, BigDecimal limitPrice, OffsetDateTime receivedTimestamp, OffsetDateTime sentTimestamp, Integer tradeServiceExecutionId, Integer version) {
         this.id = id;
         this.executionStatus = executionStatus;
         this.tradeType = tradeType;
@@ -28,6 +29,7 @@ public class ExecutionDTO {
         this.limitPrice = limitPrice;
         this.receivedTimestamp = receivedTimestamp;
         this.sentTimestamp = sentTimestamp;
+        this.tradeServiceExecutionId = tradeServiceExecutionId;
         this.version = version;
     }
 
@@ -49,6 +51,8 @@ public class ExecutionDTO {
     public void setReceivedTimestamp(OffsetDateTime receivedTimestamp) { this.receivedTimestamp = receivedTimestamp; }
     public OffsetDateTime getSentTimestamp() { return sentTimestamp; }
     public void setSentTimestamp(OffsetDateTime sentTimestamp) { this.sentTimestamp = sentTimestamp; }
+    public Integer getTradeServiceExecutionId() { return tradeServiceExecutionId; }
+    public void setTradeServiceExecutionId(Integer tradeServiceExecutionId) { this.tradeServiceExecutionId = tradeServiceExecutionId; }
     public Integer getVersion() { return version; }
     public void setVersion(Integer version) { this.version = version; }
 
@@ -66,11 +70,12 @@ public class ExecutionDTO {
                 Objects.equals(limitPrice, that.limitPrice) &&
                 Objects.equals(receivedTimestamp, that.receivedTimestamp) &&
                 Objects.equals(sentTimestamp, that.sentTimestamp) &&
+                Objects.equals(tradeServiceExecutionId, that.tradeServiceExecutionId) &&
                 Objects.equals(version, that.version);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, executionStatus, tradeType, destination, securityId, quantity, limitPrice, receivedTimestamp, sentTimestamp, version);
+        return Objects.hash(id, executionStatus, tradeType, destination, securityId, quantity, limitPrice, receivedTimestamp, sentTimestamp, tradeServiceExecutionId, version);
     }
 } 

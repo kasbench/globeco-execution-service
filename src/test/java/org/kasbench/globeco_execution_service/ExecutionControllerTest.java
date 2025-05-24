@@ -51,7 +51,7 @@ class ExecutionControllerTest {
 
     @Test
     void testGetAllExecutions() throws Exception {
-        executionService.save(new Execution(null, "NEW", "SELL", "NASDAQ", "SEC123456789012345678901", new BigDecimal("50.00"), null, OffsetDateTime.now(), null, 1));
+        executionService.save(new Execution(null, "NEW", "SELL", "NASDAQ", "SEC123456789012345678901", new BigDecimal("50.00"), null, OffsetDateTime.now(), null, 1, 1));
         mockMvc.perform(get("/api/v1/executions"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").exists());

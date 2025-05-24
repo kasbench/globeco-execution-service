@@ -47,6 +47,7 @@ public class ExecutionController {
                 execution.getLimitPrice(),
                 execution.getReceivedTimestamp(),
                 execution.getSentTimestamp(),
+                execution.getTradeServiceExecutionId(),
                 execution.getVersion()
         );
     }
