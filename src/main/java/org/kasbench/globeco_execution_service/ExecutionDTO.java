@@ -15,11 +15,16 @@ public class ExecutionDTO {
     private OffsetDateTime receivedTimestamp;
     private OffsetDateTime sentTimestamp;
     private Integer tradeServiceExecutionId;
+    private BigDecimal quantityFilled;
+    /**
+     * The average price for the execution. Nullable.
+     */
+    private BigDecimal averagePrice;
     private Integer version;
 
     public ExecutionDTO() {}
 
-    public ExecutionDTO(Integer id, String executionStatus, String tradeType, String destination, String securityId, BigDecimal quantity, BigDecimal limitPrice, OffsetDateTime receivedTimestamp, OffsetDateTime sentTimestamp, Integer tradeServiceExecutionId, Integer version) {
+    public ExecutionDTO(Integer id, String executionStatus, String tradeType, String destination, String securityId, BigDecimal quantity, BigDecimal limitPrice, OffsetDateTime receivedTimestamp, OffsetDateTime sentTimestamp, Integer tradeServiceExecutionId, BigDecimal quantityFilled, BigDecimal averagePrice, Integer version) {
         this.id = id;
         this.executionStatus = executionStatus;
         this.tradeType = tradeType;
@@ -30,6 +35,8 @@ public class ExecutionDTO {
         this.receivedTimestamp = receivedTimestamp;
         this.sentTimestamp = sentTimestamp;
         this.tradeServiceExecutionId = tradeServiceExecutionId;
+        this.quantityFilled = quantityFilled;
+        this.averagePrice = averagePrice;
         this.version = version;
     }
 
@@ -53,6 +60,10 @@ public class ExecutionDTO {
     public void setSentTimestamp(OffsetDateTime sentTimestamp) { this.sentTimestamp = sentTimestamp; }
     public Integer getTradeServiceExecutionId() { return tradeServiceExecutionId; }
     public void setTradeServiceExecutionId(Integer tradeServiceExecutionId) { this.tradeServiceExecutionId = tradeServiceExecutionId; }
+    public BigDecimal getQuantityFilled() { return quantityFilled; }
+    public void setQuantityFilled(BigDecimal quantityFilled) { this.quantityFilled = quantityFilled; }
+    public BigDecimal getAveragePrice() { return averagePrice; }
+    public void setAveragePrice(BigDecimal averagePrice) { this.averagePrice = averagePrice; }
     public Integer getVersion() { return version; }
     public void setVersion(Integer version) { this.version = version; }
 
@@ -71,11 +82,13 @@ public class ExecutionDTO {
                 Objects.equals(receivedTimestamp, that.receivedTimestamp) &&
                 Objects.equals(sentTimestamp, that.sentTimestamp) &&
                 Objects.equals(tradeServiceExecutionId, that.tradeServiceExecutionId) &&
+                Objects.equals(quantityFilled, that.quantityFilled) &&
+                Objects.equals(averagePrice, that.averagePrice) &&
                 Objects.equals(version, that.version);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, executionStatus, tradeType, destination, securityId, quantity, limitPrice, receivedTimestamp, sentTimestamp, tradeServiceExecutionId, version);
+        return Objects.hash(id, executionStatus, tradeType, destination, securityId, quantity, limitPrice, receivedTimestamp, sentTimestamp, tradeServiceExecutionId, quantityFilled, averagePrice, version);
     }
 } 

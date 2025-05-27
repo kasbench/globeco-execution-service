@@ -9,4 +9,5 @@ public interface ExecutionService {
     List<Execution> findAll();
     void deleteById(Integer id, Integer version);
     ExecutionDTO createAndSendExecution(ExecutionPostDTO postDTO);
+    Optional<Execution> updateExecution(Integer id, ExecutionPutDTO putDTO);
 } 

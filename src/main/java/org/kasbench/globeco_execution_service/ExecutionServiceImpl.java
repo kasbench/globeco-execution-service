@@ -64,11 +64,17 @@ public class ExecutionServiceImpl implements ExecutionService {
                 java.time.OffsetDateTime.now(),
                 null,
                 postDTO.getTradeServiceExecutionId(),
-                postDTO.getVersion()
+                java.math.BigDecimal.ZERO,
+                null,
+                null
         );
-        execution = executionRepository.save(execution);
+        execution = executionRepository.saveAndFlush(execution);
         // 2. Populate ExecutionDTO, set sentTimestamp = now
         java.time.OffsetDateTime sentTimestamp = java.time.OffsetDateTime.now();
+        // 3. Update DB with sentTimestamp
+        execution.setSentTimestamp(sentTimestamp);
+        execution = executionRepository.saveAndFlush(execution);
+        // 5. Create DTO with correct version after final save
         ExecutionDTO dto = new ExecutionDTO(
                 execution.getId(),
                 execution.getExecutionStatus(),
@@ -80,13 +86,42 @@ public class ExecutionServiceImpl implements ExecutionService {
                 execution.getReceivedTimestamp(),
                 sentTimestamp,
                 execution.getTradeServiceExecutionId(),
+                execution.getQuantityFilled(),
+                execution.getAveragePrice(),
                 execution.getVersion()
         );
-        // 3. Send ExecutionDTO to Kafka
+        // 5. Send ExecutionDTO to Kafka
         kafkaTemplate.send(ordersTopic, dto);
-        // 4. Update DB with sentTimestamp
-        execution.setSentTimestamp(sentTimestamp);
-        executionRepository.save(execution);
         return dto;
+    }
+
+    @Override
+    @Transactional
+    public Optional<Execution> updateExecution(Integer id, ExecutionPutDTO putDTO) {
+        Optional<Execution> optionalExecution = executionRepository.findById(id);
+        if (optionalExecution.isEmpty()) {
+            return Optional.empty();
+        }
+        Execution execution = optionalExecution.get();
+        // Optimistic concurrency check
+        if (!execution.getVersion().equals(putDTO.getVersion())) {
+            throw new org.springframework.dao.OptimisticLockingFailureException("Version mismatch for execution with id: " + id);
+        }
+        // Increment quantityFilled
+        java.math.BigDecimal newQuantityFilled = execution.getQuantityFilled() == null ? java.math.BigDecimal.ZERO : execution.getQuantityFilled();
+        newQuantityFilled = newQuantityFilled.add(putDTO.getQuantityFilled());
+        execution.setQuantityFilled(newQuantityFilled);
+        // Set averagePrice
+        execution.setAveragePrice(putDTO.getAveragePrice());
+        // Update executionStatus
+        if (newQuantityFilled.compareTo(execution.getQuantity()) < 0) {
+            execution.setExecutionStatus("PART");
+        } else {
+            execution.setExecutionStatus("FULL");
+        }
+        // Save and return
+        execution = executionRepository.save(execution);
+        executionRepository.flush();
+        return Optional.of(execution);
     }
 } 

@@ -39,13 +39,19 @@ public class Execution {
     @Column(name = "trade_service_execution_id")
     private Integer tradeServiceExecutionId;
 
+    @Column(name = "quantity_filled", precision = 18, scale = 8)
+    private BigDecimal quantityFilled;
+
+    @Column(name = "average_price", precision = 18, scale = 8)
+    private BigDecimal averagePrice;
+
     @Version
     @Column(name = "version", nullable = false)
-    private Integer version = 1;
+    private Integer version;
 
     public Execution() {}
 
-    public Execution(Integer id, String executionStatus, String tradeType, String destination, String securityId, BigDecimal quantity, BigDecimal limitPrice, OffsetDateTime receivedTimestamp, OffsetDateTime sentTimestamp, Integer tradeServiceExecutionId, Integer version) {
+    public Execution(Integer id, String executionStatus, String tradeType, String destination, String securityId, BigDecimal quantity, BigDecimal limitPrice, OffsetDateTime receivedTimestamp, OffsetDateTime sentTimestamp, Integer tradeServiceExecutionId, BigDecimal quantityFilled, BigDecimal averagePrice, Integer version) {
         this.id = id;
         this.executionStatus = executionStatus;
         this.tradeType = tradeType;
@@ -56,6 +62,8 @@ public class Execution {
         this.receivedTimestamp = receivedTimestamp;
         this.sentTimestamp = sentTimestamp;
         this.tradeServiceExecutionId = tradeServiceExecutionId;
+        this.quantityFilled = quantityFilled;
+        this.averagePrice = averagePrice;
         this.version = version;
     }
 
@@ -81,6 +89,10 @@ public class Execution {
     public void setTradeServiceExecutionId(Integer tradeServiceExecutionId) { this.tradeServiceExecutionId = tradeServiceExecutionId; }
     public Integer getVersion() { return version; }
     public void setVersion(Integer version) { this.version = version; }
+    public BigDecimal getQuantityFilled() { return quantityFilled; }
+    public void setQuantityFilled(BigDecimal quantityFilled) { this.quantityFilled = quantityFilled; }
+    public BigDecimal getAveragePrice() { return averagePrice; }
+    public void setAveragePrice(BigDecimal averagePrice) { this.averagePrice = averagePrice; }
 
     @Override
     public boolean equals(Object o) {
@@ -97,11 +109,13 @@ public class Execution {
                 Objects.equals(receivedTimestamp, that.receivedTimestamp) &&
                 Objects.equals(sentTimestamp, that.sentTimestamp) &&
                 Objects.equals(tradeServiceExecutionId, that.tradeServiceExecutionId) &&
+                Objects.equals(quantityFilled, that.quantityFilled) &&
+                Objects.equals(averagePrice, that.averagePrice) &&
                 Objects.equals(version, that.version);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, executionStatus, tradeType, destination, securityId, quantity, limitPrice, receivedTimestamp, sentTimestamp, tradeServiceExecutionId, version);
+        return Objects.hash(id, executionStatus, tradeType, destination, securityId, quantity, limitPrice, receivedTimestamp, sentTimestamp, tradeServiceExecutionId, quantityFilled, averagePrice, version);
     }
 } 

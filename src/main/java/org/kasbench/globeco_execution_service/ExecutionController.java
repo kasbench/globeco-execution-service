@@ -35,6 +35,12 @@ public class ExecutionController {
         return new ResponseEntity<>(dto, HttpStatus.CREATED);
     }
 
+    @PutMapping("/execution/{id}")
+    public ResponseEntity<ExecutionDTO> updateExecution(@PathVariable("id") Integer id, @RequestBody ExecutionPutDTO putDTO) {
+        Optional<Execution> updated = executionService.updateExecution(id, putDTO);
+        return updated.map(value -> ResponseEntity.ok(toDTO(value)))
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
 
     private ExecutionDTO toDTO(Execution execution) {
         return new ExecutionDTO(
@@ -48,6 +54,8 @@ public class ExecutionController {
                 execution.getReceivedTimestamp(),
                 execution.getSentTimestamp(),
                 execution.getTradeServiceExecutionId(),
+                execution.getQuantityFilled(),
+                execution.getAveragePrice(),
                 execution.getVersion()
         );
     }

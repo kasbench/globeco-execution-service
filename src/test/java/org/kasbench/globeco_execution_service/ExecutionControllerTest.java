@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.annotation.DirtiesContext;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -20,6 +21,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Import(TestcontainersConfiguration.class)
 @ActiveProfiles("test")
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class ExecutionControllerTest {
     @Autowired
     private MockMvc mockMvc;
@@ -51,23 +53,60 @@ class ExecutionControllerTest {
 
     @Test
     void testGetAllExecutions() throws Exception {
-        executionService.save(new Execution(null, "NEW", "SELL", "NASDAQ", "SEC123456789012345678901", new BigDecimal("50.00"), null, OffsetDateTime.now(), null, 1, 1));
+        executionService.save(new Execution(null, "NEW", "SELL", "NASDAQ", "SEC123456789012345678901", new BigDecimal("50.00"), null, OffsetDateTime.now(), null, 1, BigDecimal.ZERO, null, 1));
         mockMvc.perform(get("/api/v1/executions"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").exists());
     }
 
-    // @Test
-    // void testUpdateExecution() throws Exception {
-    //     Execution execution = executionService.save(new Execution(null, "NEW", "BUY", "NYSE", new BigDecimal("100.00"), new BigDecimal("10.00"), OffsetDateTime.now(), null, 1));
-    //     ExecutionPostDTO updateDTO = new ExecutionPostDTO("FILLED", "SELL", "LSE", new BigDecimal("200.00"), new BigDecimal("20.00"), execution.getVersion());
-    //     String json = objectMapper.writeValueAsString(updateDTO);
-    //     mockMvc.perform(put("/api/v1/blotter/" + execution.getId())
-    //             .contentType(MediaType.APPLICATION_JSON)
-    //             .content(json))
-    //             .andExpect(status().isOk())
-    //             .andExpect(jsonPath("$.executionStatus").value("FILLED"));
-    // }
+    @Test
+    void testUpdateExecution_PutEndpoint() throws Exception {
+        // Create execution
+        ExecutionPostDTO postDTO = new ExecutionPostDTO("NEW", "BUY", "NYSE", "SEC123456789012345678901", new BigDecimal("10.00"), new BigDecimal("1.00"), 1, 1);
+        String postJson = objectMapper.writeValueAsString(postDTO);
+        String response = mockMvc.perform(post("/api/v1/executions")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(postJson))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        ExecutionDTO created = objectMapper.readValue(response, ExecutionDTO.class);
+        // Update: add 4, set avg price
+        ExecutionPutDTO putDTO = new ExecutionPutDTO(new BigDecimal("4.00"), new BigDecimal("1.10"), created.getVersion());
+        String putJson = objectMapper.writeValueAsString(putDTO);
+        String putResponse = mockMvc.perform(put("/api/v1/execution/" + created.getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(putJson))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.quantityFilled").value(4.0))
+                .andExpect(jsonPath("$.averagePrice").value(1.10))
+                .andExpect(jsonPath("$.executionStatus").value("PART"))
+                .andReturn().getResponse().getContentAsString();
+        ExecutionDTO updated = objectMapper.readValue(putResponse, ExecutionDTO.class);
+        // Fetch latest via GET
+        String refreshedResponse = mockMvc.perform(get("/api/v1/execution/" + created.getId()))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        ExecutionDTO refreshed = objectMapper.readValue(refreshedResponse, ExecutionDTO.class);
+        org.assertj.core.api.Assertions.assertThat(refreshed.getVersion()).isGreaterThan(created.getVersion());
+        // Update again: add 6, should become FULL
+        ExecutionPutDTO putDTO2 = new ExecutionPutDTO(new BigDecimal("6.00"), new BigDecimal("1.20"), refreshed.getVersion());
+        String putJson2 = objectMapper.writeValueAsString(putDTO2);
+        String putResponse2 = mockMvc.perform(put("/api/v1/execution/" + created.getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(putJson2))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.quantityFilled").value(10.0))
+                .andExpect(jsonPath("$.averagePrice").value(1.20))
+                .andExpect(jsonPath("$.executionStatus").value("FULL"))
+                .andReturn().getResponse().getContentAsString();
+        ExecutionDTO updated2 = objectMapper.readValue(putResponse2, ExecutionDTO.class);
+        // Fetch latest via GET
+        String refreshedResponse2 = mockMvc.perform(get("/api/v1/execution/" + created.getId()))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        ExecutionDTO refreshed2 = objectMapper.readValue(refreshedResponse2, ExecutionDTO.class);
+        org.assertj.core.api.Assertions.assertThat(refreshed2.getVersion()).isGreaterThan(refreshed.getVersion());
+    }
 
     // @Test
     // void testDeleteExecution() throws Exception {
