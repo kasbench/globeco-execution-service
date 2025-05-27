@@ -54,3 +54,5 @@
 
 2024-06-09: Added a global CORS configuration by creating a new WebConfig class in src/main/java/org/kasbench/globeco_execution_service/WebConfig.java. This configuration allows all origins, methods, and headers for all endpoints, ensuring cross-origin requests are permitted as required.
 
+Reviewed and updated documentation/supplemental-requirement-1.md for clarity and actionability. Expanded the ## Steps section to provide detailed, step-by-step implementation instructions, clarified requirements, and ensured terminology and formatting are consistent throughout the document, as per user request.
+
