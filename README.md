@@ -68,7 +68,9 @@ kafka.topic.orders=orders
 | received_timestamp | timestamptz |  |  |  | &#10003; |  |  |
 | sent_timestamp | timestamptz |  |  |  |  |  |  |
 | trade_service_execution_id | integer |  |  |  |  |  |  |
-| version | integer |  |  |  | &#10003; | 1 |  |
+| quantity_filled | decimal(18,8) |  |  |  |  | 0 | Amount of the order that has been filled |
+| average_price | decimal(18,8) |  |  |  |  |  | Average price of filled quantities |
+| version | integer |  |  |  | &#10003; | 1 | Optimistic locking version |
 
 #### Constraints
 | Name | Type | Column(s) | References | On Update | On Delete | Expression | Description |
@@ -85,10 +87,52 @@ kafka.topic.orders=orders
 | GET    | /api/v1/executions      |                     | [ExecutionDTO]         | List all executions                 |
 | GET    | /api/v1/execution/{id} |                     | ExecutionDTO           | Get an execution by ID               |
 | POST   | /api/v1/executions      | ExecutionPostDTO   | ExecutionDTO           | Create a new execution              |
+| PUT    | /api/v1/execution/{id} | ExecutionPutDTO    | ExecutionDTO           | Update an execution (fill quantities) |
 
 ### Data Transfer Objects
-- `ExecutionPostDTO`: Used for creating/updating executions
+- `ExecutionPostDTO`: Used for creating executions
+- `ExecutionPutDTO`: Used for updating execution fill quantities and prices
 - `ExecutionDTO`: Used for returning execution data
+
+### PUT Endpoint Details
+
+The PUT endpoint `/api/v1/execution/{id}` is used to update execution fill information:
+
+#### Request Body (`ExecutionPutDTO`)
+```json
+{
+  "quantityFilled": 4.50,
+  "averagePrice": 105.25,
+  "version": 1
+}
+```
+
+#### Response Body (`ExecutionDTO`)
+```json
+{
+  "id": 1,
+  "executionStatus": "PART",
+  "tradeType": "BUY",
+  "destination": "NYSE",
+  "securityId": "SEC123456789012345678901",
+  "quantity": 10.00000000,
+  "limitPrice": 100.00000000,
+  "receivedTimestamp": "2025-01-27T15:30:00Z",
+  "sentTimestamp": "2025-01-27T15:30:01Z",
+  "tradeServiceExecutionId": 1,
+  "quantityFilled": 4.50000000,
+  "averagePrice": 105.25000000,
+  "version": 2
+}
+```
+
+#### Business Logic
+- `quantityFilled` in the request is **added** to the existing `quantity_filled` in the database
+- `averagePrice` in the request **replaces** the existing `average_price` in the database
+- After the update:
+  - If `quantity_filled` < `quantity`: `execution_status` is set to "PART"
+  - If `quantity_filled` >= `quantity`: `execution_status` is set to "FULL"
+- Uses optimistic concurrency control via the `version` field
 
 ## Health Checks
 - Liveness: `/actuator/health/liveness`

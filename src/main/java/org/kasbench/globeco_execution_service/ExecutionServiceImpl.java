@@ -4,7 +4,10 @@ import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.beans.factory.annotation.Value;
 
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -14,7 +17,7 @@ public class ExecutionServiceImpl implements ExecutionService {
     private final KafkaTemplate<String, ExecutionDTO> kafkaTemplate;
     private final String ordersTopic;
 
-    public ExecutionServiceImpl(ExecutionRepository executionRepository, KafkaTemplate<String, ExecutionDTO> kafkaTemplate, @org.springframework.beans.factory.annotation.Value("${kafka.topic.orders:orders}") String ordersTopic) {
+    public ExecutionServiceImpl(ExecutionRepository executionRepository, KafkaTemplate<String, ExecutionDTO> kafkaTemplate, @Value("${kafka.topic.orders:orders}") String ordersTopic) {
         this.executionRepository = executionRepository;
         this.kafkaTemplate = kafkaTemplate;
         this.ordersTopic = ordersTopic;
@@ -61,16 +64,16 @@ public class ExecutionServiceImpl implements ExecutionService {
                 postDTO.getSecurityId(),
                 postDTO.getQuantity(),
                 postDTO.getLimitPrice(),
-                java.time.OffsetDateTime.now(),
+                OffsetDateTime.now(),
                 null,
                 postDTO.getTradeServiceExecutionId(),
-                java.math.BigDecimal.ZERO,
+                BigDecimal.ZERO,
                 null,
                 null
         );
         execution = executionRepository.saveAndFlush(execution);
         // 2. Populate ExecutionDTO, set sentTimestamp = now
-        java.time.OffsetDateTime sentTimestamp = java.time.OffsetDateTime.now();
+        OffsetDateTime sentTimestamp = OffsetDateTime.now();
         // 3. Update DB with sentTimestamp
         execution.setSentTimestamp(sentTimestamp);
         execution = executionRepository.saveAndFlush(execution);
@@ -105,10 +108,10 @@ public class ExecutionServiceImpl implements ExecutionService {
         Execution execution = optionalExecution.get();
         // Optimistic concurrency check
         if (!execution.getVersion().equals(putDTO.getVersion())) {
-            throw new org.springframework.dao.OptimisticLockingFailureException("Version mismatch for execution with id: " + id);
+            throw new OptimisticLockingFailureException("Version mismatch for execution with id: " + id);
         }
         // Increment quantityFilled
-        java.math.BigDecimal newQuantityFilled = execution.getQuantityFilled() == null ? java.math.BigDecimal.ZERO : execution.getQuantityFilled();
+        BigDecimal newQuantityFilled = execution.getQuantityFilled() == null ? BigDecimal.ZERO : execution.getQuantityFilled();
         newQuantityFilled = newQuantityFilled.add(putDTO.getQuantityFilled());
         execution.setQuantityFilled(newQuantityFilled);
         // Set averagePrice

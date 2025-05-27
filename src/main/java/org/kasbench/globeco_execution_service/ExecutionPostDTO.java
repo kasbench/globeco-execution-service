@@ -3,14 +3,48 @@ package org.kasbench.globeco_execution_service;
 import java.math.BigDecimal;
 import java.util.Objects;
 
+/**
+ * DTO for creating new executions.
+ */
 public class ExecutionPostDTO {
+    /**
+     * The execution status (e.g., "NEW", "PART", "FULL").
+     */
     private String executionStatus;
+    
+    /**
+     * The trade type (e.g., "BUY", "SELL").
+     */
     private String tradeType;
+    
+    /**
+     * The destination exchange (e.g., "NYSE", "NASDAQ").
+     */
     private String destination;
+    
+    /**
+     * The security identifier (24 characters).
+     */
     private String securityId;
+    
+    /**
+     * The quantity to trade (not null).
+     */
     private BigDecimal quantity;
+    
+    /**
+     * The limit price for the trade (nullable).
+     */
     private BigDecimal limitPrice;
+    
+    /**
+     * The trade service execution ID (nullable).
+     */
     private Integer tradeServiceExecutionId;
+    
+    /**
+     * Optimistic locking version number (not null).
+     */
     private Integer version;
 
     public ExecutionPostDTO() {}

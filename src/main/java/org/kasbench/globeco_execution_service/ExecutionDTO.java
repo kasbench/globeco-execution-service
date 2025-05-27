@@ -4,22 +4,73 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
+/**
+ * DTO for returning execution data.
+ */
 public class ExecutionDTO {
-    private Integer id;
-    private String executionStatus;
-    private String tradeType;
-    private String destination;
-    private String securityId;
-    private BigDecimal quantity;
-    private BigDecimal limitPrice;
-    private OffsetDateTime receivedTimestamp;
-    private OffsetDateTime sentTimestamp;
-    private Integer tradeServiceExecutionId;
-    private BigDecimal quantityFilled;
     /**
-     * The average price for the execution. Nullable.
+     * The unique execution ID.
+     */
+    private Integer id;
+    
+    /**
+     * The execution status (e.g., "NEW", "PART", "FULL").
+     */
+    private String executionStatus;
+    
+    /**
+     * The trade type (e.g., "BUY", "SELL").
+     */
+    private String tradeType;
+    
+    /**
+     * The destination exchange (e.g., "NYSE", "NASDAQ").
+     */
+    private String destination;
+    
+    /**
+     * The security identifier (24 characters).
+     */
+    private String securityId;
+    
+    /**
+     * The quantity to trade.
+     */
+    private BigDecimal quantity;
+    
+    /**
+     * The limit price for the trade (nullable).
+     */
+    private BigDecimal limitPrice;
+    
+    /**
+     * When the execution was received.
+     */
+    private OffsetDateTime receivedTimestamp;
+    
+    /**
+     * When the execution was sent to Kafka (nullable).
+     */
+    private OffsetDateTime sentTimestamp;
+    
+    /**
+     * The trade service execution ID (nullable).
+     */
+    private Integer tradeServiceExecutionId;
+    
+    /**
+     * The amount of the order that has been filled.
+     */
+    private BigDecimal quantityFilled;
+    
+    /**
+     * The average price for filled quantities (nullable).
      */
     private BigDecimal averagePrice;
+    
+    /**
+     * Optimistic locking version number.
+     */
     private Integer version;
 
     public ExecutionDTO() {}
