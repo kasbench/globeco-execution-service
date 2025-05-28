@@ -112,7 +112,7 @@ public class ExecutionServiceImpl implements ExecutionService {
         }
         // Increment quantityFilled
         BigDecimal newQuantityFilled = execution.getQuantityFilled() == null ? BigDecimal.ZERO : execution.getQuantityFilled();
-        newQuantityFilled = newQuantityFilled.add(putDTO.getQuantityFilled());
+        // newQuantityFilled = newQuantityFilled.add(putDTO.getQuantityFilled());
         execution.setQuantityFilled(newQuantityFilled);
         // Set averagePrice
         execution.setAveragePrice(putDTO.getAveragePrice());
