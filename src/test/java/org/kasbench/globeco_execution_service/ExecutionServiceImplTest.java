@@ -1,8 +1,10 @@
 package org.kasbench.globeco_execution_service;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.test.context.ActiveProfiles;
@@ -14,6 +16,8 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
@@ -22,6 +26,18 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class ExecutionServiceImplTest {
     @Autowired
     private ExecutionService executionService;
+    
+    @MockBean
+    private TradeServiceClient tradeServiceClient;
+
+    @BeforeEach
+    void setUp() {
+        // Reset mocks and set up default behavior
+        reset(tradeServiceClient);
+        // Default behavior: return empty for version requests (simulates no trade service execution ID)
+        when(tradeServiceClient.getExecutionVersion(any())).thenReturn(Optional.empty());
+        when(tradeServiceClient.updateExecutionFill(any(), any())).thenReturn(false);
+    }
 
     @Test
     void testSaveAndFind() {
@@ -63,7 +79,7 @@ class ExecutionServiceImplTest {
         assertThat(refreshed1.get().getExecutionStatus()).isEqualTo("PART");
         assertThat(refreshed1.get().getVersion()).isGreaterThan(saved.getVersion());
         // Second update: add 6, should become FULL
-        ExecutionPutDTO putDTO2 = new ExecutionPutDTO(new BigDecimal("10.00"), new BigDecimal("1.20"), refreshed1.get().getVersion());
+        ExecutionPutDTO putDTO2 = new ExecutionPutDTO(new BigDecimal("6.00"), new BigDecimal("1.20"), refreshed1.get().getVersion());
         Optional<Execution> updated2 = executionService.updateExecution(saved.getId(), putDTO2);
         assertThat(updated2).isPresent();
         // Re-fetch to get the latest version
@@ -91,5 +107,111 @@ class ExecutionServiceImplTest {
         ExecutionDTO dto = executionService.createAndSendExecution(postDTO);
         assertThat(dto.getQuantityFilled()).isEqualTo(BigDecimal.ZERO);
         assertThat(dto.getAveragePrice()).isNull();
+    }
+
+    @Test
+    void testUpdateExecution_WithTradeServiceIntegration_Success() {
+        // Given
+        Integer tradeServiceExecutionId = 456;
+        Execution execution = new Execution(null, "NEW", "BUY", "NYSE", "SEC123456789012345678901", 
+                new BigDecimal("10.00"), new BigDecimal("1.00"), OffsetDateTime.now(), null, 
+                tradeServiceExecutionId, BigDecimal.ZERO, null, null);
+        Execution saved = executionService.save(execution);
+
+        // Mock trade service responses
+        when(tradeServiceClient.getExecutionVersion(tradeServiceExecutionId))
+                .thenReturn(Optional.of(3));
+        when(tradeServiceClient.updateExecutionFill(eq(tradeServiceExecutionId), any(TradeServiceExecutionFillDTO.class)))
+                .thenReturn(true);
+
+        // When
+        ExecutionPutDTO putDTO = new ExecutionPutDTO(new BigDecimal("5.00"), new BigDecimal("1.15"), saved.getVersion());
+        Optional<Execution> updated = executionService.updateExecution(saved.getId(), putDTO);
+
+        // Then
+        assertThat(updated).isPresent();
+        assertThat(updated.get().getQuantityFilled()).isEqualTo(new BigDecimal("5.00000000"));
+        assertThat(updated.get().getExecutionStatus()).isEqualTo("PART");
+
+        // Verify trade service was called
+        verify(tradeServiceClient).getExecutionVersion(tradeServiceExecutionId);
+        verify(tradeServiceClient).updateExecutionFill(eq(tradeServiceExecutionId), argThat(fillDTO ->
+                fillDTO.getExecutionStatus().equals("PART") &&
+                fillDTO.getQuantityFilled().equals(new BigDecimal("5.00000000")) &&
+                fillDTO.getVersion().equals(3)
+        ));
+    }
+
+    @Test
+    void testUpdateExecution_WithTradeServiceIntegration_TradeServiceFailure() {
+        // Given
+        Integer tradeServiceExecutionId = 789;
+        Execution execution = new Execution(null, "NEW", "BUY", "NYSE", "SEC123456789012345678901", 
+                new BigDecimal("10.00"), new BigDecimal("1.00"), OffsetDateTime.now(), null, 
+                tradeServiceExecutionId, BigDecimal.ZERO, null, null);
+        Execution saved = executionService.save(execution);
+
+        // Mock trade service failure
+        when(tradeServiceClient.getExecutionVersion(tradeServiceExecutionId))
+                .thenReturn(Optional.empty());
+
+        // When
+        ExecutionPutDTO putDTO = new ExecutionPutDTO(new BigDecimal("3.00"), new BigDecimal("1.05"), saved.getVersion());
+        Optional<Execution> updated = executionService.updateExecution(saved.getId(), putDTO);
+
+        // Then - execution service should still succeed even if trade service fails
+        assertThat(updated).isPresent();
+        assertThat(updated.get().getQuantityFilled()).isEqualTo(new BigDecimal("3.00000000"));
+        assertThat(updated.get().getExecutionStatus()).isEqualTo("PART");
+
+        // Verify trade service was called but update was not attempted
+        verify(tradeServiceClient).getExecutionVersion(tradeServiceExecutionId);
+        verify(tradeServiceClient, never()).updateExecutionFill(any(), any());
+    }
+
+    @Test
+    void testUpdateExecution_WithoutTradeServiceExecutionId() {
+        // Given - execution without trade service ID
+        Execution execution = new Execution(null, "NEW", "BUY", "NYSE", "SEC123456789012345678901", 
+                new BigDecimal("10.00"), new BigDecimal("1.00"), OffsetDateTime.now(), null, 
+                null, BigDecimal.ZERO, null, null); // null trade service execution ID
+        Execution saved = executionService.save(execution);
+
+        // When
+        ExecutionPutDTO putDTO = new ExecutionPutDTO(new BigDecimal("2.00"), new BigDecimal("1.08"), saved.getVersion());
+        Optional<Execution> updated = executionService.updateExecution(saved.getId(), putDTO);
+
+        // Then
+        assertThat(updated).isPresent();
+        assertThat(updated.get().getQuantityFilled()).isEqualTo(new BigDecimal("2.00000000"));
+
+        // Verify trade service was not called
+        verify(tradeServiceClient, never()).getExecutionVersion(any());
+        verify(tradeServiceClient, never()).updateExecutionFill(any(), any());
+    }
+
+    @Test
+    void testUpdateExecution_TradeServiceException() {
+        // Given
+        Integer tradeServiceExecutionId = 999;
+        Execution execution = new Execution(null, "NEW", "BUY", "NYSE", "SEC123456789012345678901", 
+                new BigDecimal("10.00"), new BigDecimal("1.00"), OffsetDateTime.now(), null, 
+                tradeServiceExecutionId, BigDecimal.ZERO, null, null);
+        Execution saved = executionService.save(execution);
+
+        // Mock trade service exception
+        when(tradeServiceClient.getExecutionVersion(tradeServiceExecutionId))
+                .thenThrow(new RuntimeException("Trade service unavailable"));
+
+        // When
+        ExecutionPutDTO putDTO = new ExecutionPutDTO(new BigDecimal("1.00"), new BigDecimal("1.02"), saved.getVersion());
+        Optional<Execution> updated = executionService.updateExecution(saved.getId(), putDTO);
+
+        // Then - execution service should still succeed
+        assertThat(updated).isPresent();
+        assertThat(updated.get().getQuantityFilled()).isEqualTo(new BigDecimal("1.00000000"));
+
+        // Verify trade service was called
+        verify(tradeServiceClient).getExecutionVersion(tradeServiceExecutionId);
     }
 } 

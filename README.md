@@ -10,6 +10,7 @@ The Execution Service acts as a bridge between the trading service and the FIX e
 - RESTful API for managing executions
 - PostgreSQL for persistent storage
 - Kafka integration for event streaming
+- Trade service integration for execution updates
 - Caching with Caffeine (5 minute TTL)
 - Database migrations with Flyway
 - Health checks for Kubernetes (liveness, readiness, startup)
@@ -36,6 +37,14 @@ spring.datasource.username=postgres
 spring.datasource.password=
 spring.kafka.bootstrap-servers=globeco-execution-service-kafka-kafka-1:9092
 kafka.topic.orders=orders
+
+# Trade service integration
+trade.service.host=globeco-trade-service
+trade.service.port=8082
+trade.service.base-url=http://${trade.service.host}:${trade.service.port}
+trade.service.timeout=5000
+trade.service.retry.enabled=true
+trade.service.retry.max-attempts=2
 ```
 
 
@@ -134,6 +143,49 @@ The PUT endpoint `/api/v1/execution/{id}` is used to update execution fill infor
   - If `quantity_filled` >= `quantity`: `execution_status` is set to "FULL"
 - Uses optimistic concurrency control via the `version` field
 
+## Trade Service Integration
+
+The execution service automatically integrates with the trade service to keep execution data synchronized.
+
+### Integration Workflow
+
+When an execution is updated via the PUT `/api/v1/execution/{id}` endpoint:
+
+1. **Database Update**: The execution service updates its local database first
+2. **Trade Service Sync**: After successful database update, the service automatically:
+   - Retrieves the current version from the trade service via `GET /api/v1/executions/{id}`
+   - Updates the trade service via `PUT /api/v1/executions/{id}/fill`
+
+### Configuration Properties
+
+| Property | Default | Description |
+|----------|---------|-------------|
+| `trade.service.host` | `globeco-trade-service` | Trade service hostname |
+| `trade.service.port` | `8082` | Trade service port |
+| `trade.service.base-url` | `http://${trade.service.host}:${trade.service.port}` | Full base URL |
+| `trade.service.timeout` | `5000` | HTTP timeout in milliseconds |
+| `trade.service.retry.enabled` | `true` | Enable retry on conflicts |
+| `trade.service.retry.max-attempts` | `2` | Maximum retry attempts |
+
+### Error Handling
+
+The trade service integration is designed to be **non-blocking** and **resilient**:
+
+- **Network Errors**: Logged but don't affect execution service functionality
+- **404 Not Found**: Logged as warning, execution continues normally
+- **409 Conflict**: Automatic retry with fresh version (if retry enabled)
+- **Timeouts**: Configurable timeouts with graceful handling
+- **Service Unavailable**: Execution service continues to function normally
+
+### Field Mapping
+
+| Execution Service Field | Trade Service Field | Description |
+|------------------------|-------------------|-------------|
+| `trade_service_execution_id` | `{id}` (URL path) | Used to identify the execution in trade service |
+| `execution_status` | `executionStatus` | Current status ("PART", "FULL", etc.) |
+| `quantity_filled` | `quantityFilled` | Total quantity filled |
+| N/A | `version` | Retrieved from trade service for optimistic locking |
+
 ## Health Checks
 - Liveness: `/actuator/health/liveness`
 - Readiness: `/actuator/health/readiness`
@@ -141,6 +193,7 @@ The PUT endpoint `/api/v1/execution/{id}` is used to update execution fill infor
 
 ## Testing
 - Unit and integration tests use Testcontainers for PostgreSQL and Kafka
+- Trade service integration tests use mocked HTTP responses
 - Tests are located in `src/test/java/org/kasbench/globeco_execution_service/`
 
 ## Running Locally

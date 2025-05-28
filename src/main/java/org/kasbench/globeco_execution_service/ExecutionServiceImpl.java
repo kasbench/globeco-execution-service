@@ -1,5 +1,7 @@
 package org.kasbench.globeco_execution_service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,13 +15,21 @@ import java.util.Optional;
 
 @Service
 public class ExecutionServiceImpl implements ExecutionService {
+    private static final Logger logger = LoggerFactory.getLogger(ExecutionServiceImpl.class);
+    
     private final ExecutionRepository executionRepository;
     private final KafkaTemplate<String, ExecutionDTO> kafkaTemplate;
+    private final TradeServiceClient tradeServiceClient;
     private final String ordersTopic;
 
-    public ExecutionServiceImpl(ExecutionRepository executionRepository, KafkaTemplate<String, ExecutionDTO> kafkaTemplate, @Value("${kafka.topic.orders:orders}") String ordersTopic) {
+    public ExecutionServiceImpl(
+            ExecutionRepository executionRepository, 
+            KafkaTemplate<String, ExecutionDTO> kafkaTemplate, 
+            TradeServiceClient tradeServiceClient,
+            @Value("${kafka.topic.orders:orders}") String ordersTopic) {
         this.executionRepository = executionRepository;
         this.kafkaTemplate = kafkaTemplate;
+        this.tradeServiceClient = tradeServiceClient;
         this.ordersTopic = ordersTopic;
     }
 
@@ -111,7 +121,7 @@ public class ExecutionServiceImpl implements ExecutionService {
             throw new OptimisticLockingFailureException("Version mismatch for execution with id: " + id);
         }
         // Increment quantityFilled
-        BigDecimal newQuantityFilled = new BigDecimal(0); //execution.getQuantityFilled() == null ? BigDecimal.ZERO : execution.getQuantityFilled();
+        BigDecimal newQuantityFilled = execution.getQuantityFilled() == null ? BigDecimal.ZERO : execution.getQuantityFilled();
         newQuantityFilled = newQuantityFilled.add(putDTO.getQuantityFilled());
         execution.setQuantityFilled(newQuantityFilled);
         // Set averagePrice
@@ -125,6 +135,51 @@ public class ExecutionServiceImpl implements ExecutionService {
         // Save and return
         execution = executionRepository.save(execution);
         executionRepository.flush();
+        
+        // Update trade service asynchronously (non-blocking)
+        updateTradeServiceAsync(execution);
+        
         return Optional.of(execution);
+    }
+    
+    /**
+     * Update the trade service with execution fill information.
+     * This method is called asynchronously to avoid blocking the main transaction.
+     */
+    private void updateTradeServiceAsync(Execution execution) {
+        // Only update if we have a trade service execution ID
+        if (execution.getTradeServiceExecutionId() == null) {
+            logger.debug("No trade service execution ID for execution {}, skipping trade service update", execution.getId());
+            return;
+        }
+        
+        try {
+            logger.debug("Updating trade service for execution {} with trade service ID {}", 
+                    execution.getId(), execution.getTradeServiceExecutionId());
+            
+            // Get current version from trade service
+            Optional<Integer> tradeServiceVersion = tradeServiceClient.getExecutionVersion(execution.getTradeServiceExecutionId());
+            if (tradeServiceVersion.isEmpty()) {
+                logger.warn("Could not retrieve version from trade service for execution {}", execution.getTradeServiceExecutionId());
+                return;
+            }
+            
+            // Create fill DTO
+            TradeServiceExecutionFillDTO fillDTO = new TradeServiceExecutionFillDTO(
+                    execution.getExecutionStatus(),
+                    execution.getQuantityFilled(),
+                    tradeServiceVersion.get()
+            );
+            
+            // Update trade service
+            boolean success = tradeServiceClient.updateExecutionFill(execution.getTradeServiceExecutionId(), fillDTO);
+            if (success) {
+                logger.debug("Successfully updated trade service for execution {}", execution.getId());
+            } else {
+                logger.warn("Failed to update trade service for execution {}", execution.getId());
+            }
+        } catch (Exception e) {
+            logger.error("Error updating trade service for execution {}: {}", execution.getId(), e.getMessage(), e);
+        }
     }
 } 

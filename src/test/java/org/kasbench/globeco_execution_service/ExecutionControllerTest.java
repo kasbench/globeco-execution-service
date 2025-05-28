@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
@@ -13,7 +14,10 @@ import org.springframework.test.annotation.DirtiesContext;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.Optional;
 
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -31,6 +35,9 @@ class ExecutionControllerTest {
 
     @Autowired
     private ExecutionService executionService;
+    
+    @MockBean
+    private TradeServiceClient tradeServiceClient;
 
     @Test
     void testCreateAndGetExecution() throws Exception {
@@ -61,6 +68,10 @@ class ExecutionControllerTest {
 
     @Test
     void testUpdateExecution_PutEndpoint() throws Exception {
+        // Mock trade service for this test
+        when(tradeServiceClient.getExecutionVersion(any())).thenReturn(Optional.of(1));
+        when(tradeServiceClient.updateExecutionFill(any(), any())).thenReturn(true);
+        
         // Create execution
         ExecutionPostDTO postDTO = new ExecutionPostDTO("NEW", "BUY", "NYSE", "SEC123456789012345678901", new BigDecimal("10.00"), new BigDecimal("1.00"), 1, 1);
         String postJson = objectMapper.writeValueAsString(postDTO);
@@ -89,7 +100,7 @@ class ExecutionControllerTest {
         ExecutionDTO refreshed = objectMapper.readValue(refreshedResponse, ExecutionDTO.class);
         org.assertj.core.api.Assertions.assertThat(refreshed.getVersion()).isGreaterThan(created.getVersion());
         // Update again: add 6, should become FULL
-        ExecutionPutDTO putDTO2 = new ExecutionPutDTO(new BigDecimal("10.00"), new BigDecimal("1.20"), refreshed.getVersion());
+        ExecutionPutDTO putDTO2 = new ExecutionPutDTO(new BigDecimal("6.00"), new BigDecimal("1.20"), refreshed.getVersion());
         String putJson2 = objectMapper.writeValueAsString(putDTO2);
         String putResponse2 = mockMvc.perform(put("/api/v1/execution/" + created.getId())
                 .contentType(MediaType.APPLICATION_JSON)
