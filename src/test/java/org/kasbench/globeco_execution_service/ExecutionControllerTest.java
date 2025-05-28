@@ -81,7 +81,7 @@ class ExecutionControllerTest {
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
         ExecutionDTO created = objectMapper.readValue(response, ExecutionDTO.class);
-        // Update: add 4, set avg price
+        // Update: set quantity filled to 4, set avg price
         ExecutionPutDTO putDTO = new ExecutionPutDTO(new BigDecimal("4.00"), new BigDecimal("1.10"), created.getVersion());
         String putJson = objectMapper.writeValueAsString(putDTO);
         String putResponse = mockMvc.perform(put("/api/v1/execution/" + created.getId())
@@ -99,8 +99,8 @@ class ExecutionControllerTest {
                 .andReturn().getResponse().getContentAsString();
         ExecutionDTO refreshed = objectMapper.readValue(refreshedResponse, ExecutionDTO.class);
         org.assertj.core.api.Assertions.assertThat(refreshed.getVersion()).isGreaterThan(created.getVersion());
-        // Update again: add 6, should become FULL
-        ExecutionPutDTO putDTO2 = new ExecutionPutDTO(new BigDecimal("6.00"), new BigDecimal("1.20"), refreshed.getVersion());
+        // Update again: set quantity filled to 10, should become FULL
+        ExecutionPutDTO putDTO2 = new ExecutionPutDTO(new BigDecimal("10.00"), new BigDecimal("1.20"), refreshed.getVersion());
         String putJson2 = objectMapper.writeValueAsString(putDTO2);
         String putResponse2 = mockMvc.perform(put("/api/v1/execution/" + created.getId())
                 .contentType(MediaType.APPLICATION_JSON)

@@ -120,3 +120,12 @@ Added @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS) to both 
 - **Step 6 (Documentation)**: Updated README.md with complete trade service integration documentation including workflow, configuration properties, error handling, and field mapping
 **Status**: Completed - Full trade service integration implemented with resilient error handling, comprehensive testing, and complete documentation
 
+
+## Entry 6 - 2025-01-27
+**Request**: Change PUT API logic from incremental to total quantity filled
+**Action**: Updated the requirement implementation to change from adding delta quantities to setting total quantities:
+- **ExecutionServiceImpl**: Changed logic from `newQuantityFilled.add(putDTO.getQuantityFilled())` to `execution.setQuantityFilled(putDTO.getQuantityFilled())` to set total quantity instead of incremental
+- **Tests**: Updated all relevant tests (ExecutionServiceImplTest and ExecutionControllerTest) to reflect new total quantity behavior and fixed BigDecimal scale assertions
+- **Documentation**: Updated README.md to clarify that `quantityFilled` in the request **replaces** the existing quantity (it is the total quantity filled, not an incremental amount)
+**Status**: Completed - All 25 tests passing, logic changed from incremental to total quantity filling
+

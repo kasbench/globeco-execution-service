@@ -120,14 +120,12 @@ public class ExecutionServiceImpl implements ExecutionService {
         if (!execution.getVersion().equals(putDTO.getVersion())) {
             throw new OptimisticLockingFailureException("Version mismatch for execution with id: " + id);
         }
-        // Increment quantityFilled
-        BigDecimal newQuantityFilled = execution.getQuantityFilled() == null ? BigDecimal.ZERO : execution.getQuantityFilled();
-        newQuantityFilled = newQuantityFilled.add(putDTO.getQuantityFilled());
-        execution.setQuantityFilled(newQuantityFilled);
+        // Set quantityFilled (total quantity, not delta)
+        execution.setQuantityFilled(putDTO.getQuantityFilled());
         // Set averagePrice
         execution.setAveragePrice(putDTO.getAveragePrice());
         // Update executionStatus
-        if (newQuantityFilled.compareTo(execution.getQuantity()) < 0) {
+        if (execution.getQuantityFilled().compareTo(execution.getQuantity()) < 0) {
             execution.setExecutionStatus("PART");
         } else {
             execution.setExecutionStatus("FULL");

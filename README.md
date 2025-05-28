@@ -96,7 +96,7 @@ trade.service.retry.max-attempts=2
 | GET    | /api/v1/executions      |                     | [ExecutionDTO]         | List all executions                 |
 | GET    | /api/v1/execution/{id} |                     | ExecutionDTO           | Get an execution by ID               |
 | POST   | /api/v1/executions      | ExecutionPostDTO   | ExecutionDTO           | Create a new execution              |
-| PUT    | /api/v1/execution/{id} | ExecutionPutDTO    | ExecutionDTO           | Update an execution (fill quantities) |
+| PUT    | /api/v1/execution/{id} | ExecutionPutDTO    | ExecutionDTO           | Update an execution (set total fill quantities) |
 
 ### Data Transfer Objects
 - `ExecutionPostDTO`: Used for creating executions
@@ -136,7 +136,7 @@ The PUT endpoint `/api/v1/execution/{id}` is used to update execution fill infor
 ```
 
 #### Business Logic
-- `quantityFilled` in the request is **added** to the existing `quantity_filled` in the database
+- `quantityFilled` in the request **replaces** the existing `quantity_filled` in the database (it is the total quantity filled, not an incremental amount)
 - `averagePrice` in the request **replaces** the existing `average_price` in the database
 - After the update:
   - If `quantity_filled` < `quantity`: `execution_status` is set to "PART"
