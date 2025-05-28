@@ -1,0 +1,1599 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+      "title": "OpenAPI definition",
+      "version": "v0"
+    },
+    "servers": [
+      {
+        "url": "http://localhost:8082",
+        "description": "Generated server url"
+      }
+    ],
+    "paths": {
+      "/api/v1/tradeType/{id}": {
+        "get": {
+          "tags": [
+            "trade-type-controller"
+          ],
+          "operationId": "getTradeTypeById",
+          "parameters": [
+            {
+              "name": "id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "integer",
+                "format": "int32"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "OK",
+              "content": {
+                "*/*": {
+                  "schema": {
+                    "$ref": "#/components/schemas/TradeTypeResponseDTO"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "put": {
+          "tags": [
+            "trade-type-controller"
+          ],
+          "operationId": "updateTradeType",
+          "parameters": [
+            {
+              "name": "id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "integer",
+                "format": "int32"
+              }
+            }
+          ],
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TradeTypePutDTO"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "200": {
+              "description": "OK",
+              "content": {
+                "*/*": {
+                  "schema": {
+                    "$ref": "#/components/schemas/TradeTypeResponseDTO"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "delete": {
+          "tags": [
+            "trade-type-controller"
+          ],
+          "operationId": "deleteTradeType",
+          "parameters": [
+            {
+              "name": "id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "integer",
+                "format": "int32"
+              }
+            },
+            {
+              "name": "version",
+              "in": "query",
+              "required": true,
+              "schema": {
+                "type": "integer",
+                "format": "int32"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "OK"
+            }
+          }
+        }
+      },
+      "/api/v1/tradeOrders/{id}": {
+        "get": {
+          "tags": [
+            "trade-order-controller"
+          ],
+          "operationId": "getTradeOrderById",
+          "parameters": [
+            {
+              "name": "id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "integer",
+                "format": "int32"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "OK",
+              "content": {
+                "*/*": {
+                  "schema": {
+                    "$ref": "#/components/schemas/TradeOrderResponseDTO"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "put": {
+          "tags": [
+            "trade-order-controller"
+          ],
+          "operationId": "updateTradeOrder",
+          "parameters": [
+            {
+              "name": "id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "integer",
+                "format": "int32"
+              }
+            }
+          ],
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TradeOrderPutDTO"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "200": {
+              "description": "OK",
+              "content": {
+                "*/*": {
+                  "schema": {
+                    "$ref": "#/components/schemas/TradeOrderResponseDTO"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "delete": {
+          "tags": [
+            "trade-order-controller"
+          ],
+          "operationId": "deleteTradeOrder",
+          "parameters": [
+            {
+              "name": "id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "integer",
+                "format": "int32"
+              }
+            },
+            {
+              "name": "version",
+              "in": "query",
+              "required": true,
+              "schema": {
+                "type": "integer",
+                "format": "int32"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "OK"
+            }
+          }
+        }
+      },
+      "/api/v1/executions/{id}": {
+        "get": {
+          "tags": [
+            "execution-controller"
+          ],
+          "operationId": "getExecutionById",
+          "parameters": [
+            {
+              "name": "id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "integer",
+                "format": "int32"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "OK",
+              "content": {
+                "*/*": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ExecutionResponseDTO"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "put": {
+          "tags": [
+            "execution-controller"
+          ],
+          "operationId": "updateExecution",
+          "parameters": [
+            {
+              "name": "id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "integer",
+                "format": "int32"
+              }
+            }
+          ],
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExecutionPutDTO"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "200": {
+              "description": "OK",
+              "content": {
+                "*/*": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ExecutionResponseDTO"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "delete": {
+          "tags": [
+            "execution-controller"
+          ],
+          "operationId": "deleteExecution",
+          "parameters": [
+            {
+              "name": "id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "integer",
+                "format": "int32"
+              }
+            },
+            {
+              "name": "version",
+              "in": "query",
+              "required": true,
+              "schema": {
+                "type": "integer",
+                "format": "int32"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "OK"
+            }
+          }
+        }
+      },
+      "/api/v1/executions/{id}/fill": {
+        "put": {
+          "tags": [
+            "execution-controller"
+          ],
+          "operationId": "fillExecution",
+          "parameters": [
+            {
+              "name": "id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "integer",
+                "format": "int32"
+              }
+            }
+          ],
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExecutionPutFillDTO"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "200": {
+              "description": "OK",
+              "content": {
+                "*/*": {
+                  "schema": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/v1/executionStatuses/{id}": {
+        "get": {
+          "tags": [
+            "execution-status-controller"
+          ],
+          "operationId": "getExecutionStatusById",
+          "parameters": [
+            {
+              "name": "id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "integer",
+                "format": "int32"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "OK",
+              "content": {
+                "*/*": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ExecutionStatusResponseDTO"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "put": {
+          "tags": [
+            "execution-status-controller"
+          ],
+          "operationId": "updateExecutionStatus",
+          "parameters": [
+            {
+              "name": "id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "integer",
+                "format": "int32"
+              }
+            }
+          ],
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExecutionStatusPutDTO"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "200": {
+              "description": "OK",
+              "content": {
+                "*/*": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ExecutionStatusResponseDTO"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "delete": {
+          "tags": [
+            "execution-status-controller"
+          ],
+          "operationId": "deleteExecutionStatus",
+          "parameters": [
+            {
+              "name": "id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "integer",
+                "format": "int32"
+              }
+            },
+            {
+              "name": "version",
+              "in": "query",
+              "required": true,
+              "schema": {
+                "type": "integer",
+                "format": "int32"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "OK"
+            }
+          }
+        }
+      },
+      "/api/v1/destinations/{id}": {
+        "get": {
+          "tags": [
+            "destination-controller"
+          ],
+          "operationId": "getDestinationById",
+          "parameters": [
+            {
+              "name": "id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "integer",
+                "format": "int32"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "OK",
+              "content": {
+                "*/*": {
+                  "schema": {
+                    "$ref": "#/components/schemas/DestinationResponseDTO"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "put": {
+          "tags": [
+            "destination-controller"
+          ],
+          "operationId": "updateDestination",
+          "parameters": [
+            {
+              "name": "id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "integer",
+                "format": "int32"
+              }
+            }
+          ],
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DestinationPutDTO"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "200": {
+              "description": "OK",
+              "content": {
+                "*/*": {
+                  "schema": {
+                    "$ref": "#/components/schemas/DestinationResponseDTO"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "delete": {
+          "tags": [
+            "destination-controller"
+          ],
+          "operationId": "deleteDestination",
+          "parameters": [
+            {
+              "name": "id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "integer",
+                "format": "int32"
+              }
+            },
+            {
+              "name": "version",
+              "in": "query",
+              "required": true,
+              "schema": {
+                "type": "integer",
+                "format": "int32"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "OK"
+            }
+          }
+        }
+      },
+      "/api/v1/blotters/{id}": {
+        "get": {
+          "tags": [
+            "blotter-controller"
+          ],
+          "operationId": "getBlotterById",
+          "parameters": [
+            {
+              "name": "id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "integer",
+                "format": "int32"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "OK",
+              "content": {
+                "*/*": {
+                  "schema": {
+                    "$ref": "#/components/schemas/BlotterResponseDTO"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "put": {
+          "tags": [
+            "blotter-controller"
+          ],
+          "operationId": "updateBlotter",
+          "parameters": [
+            {
+              "name": "id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "integer",
+                "format": "int32"
+              }
+            }
+          ],
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlotterPutDTO"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "200": {
+              "description": "OK",
+              "content": {
+                "*/*": {
+                  "schema": {
+                    "$ref": "#/components/schemas/BlotterResponseDTO"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "delete": {
+          "tags": [
+            "blotter-controller"
+          ],
+          "operationId": "deleteBlotter",
+          "parameters": [
+            {
+              "name": "id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "integer",
+                "format": "int32"
+              }
+            },
+            {
+              "name": "version",
+              "in": "query",
+              "required": true,
+              "schema": {
+                "type": "integer",
+                "format": "int32"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "OK"
+            }
+          }
+        }
+      },
+      "/api/v1/tradeTypes": {
+        "get": {
+          "tags": [
+            "trade-type-controller"
+          ],
+          "operationId": "getAllTradeTypes",
+          "responses": {
+            "200": {
+              "description": "OK",
+              "content": {
+                "*/*": {
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/TradeTypeResponseDTO"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "post": {
+          "tags": [
+            "trade-type-controller"
+          ],
+          "operationId": "createTradeType",
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TradeTypePostDTO"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "200": {
+              "description": "OK",
+              "content": {
+                "*/*": {
+                  "schema": {
+                    "$ref": "#/components/schemas/TradeTypeResponseDTO"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/v1/tradeOrders": {
+        "get": {
+          "tags": [
+            "trade-order-controller"
+          ],
+          "operationId": "getAllTradeOrders",
+          "responses": {
+            "200": {
+              "description": "OK",
+              "content": {
+                "*/*": {
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/TradeOrderResponseDTO"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "post": {
+          "tags": [
+            "trade-order-controller"
+          ],
+          "operationId": "createTradeOrder",
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TradeOrderPostDTO"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "200": {
+              "description": "OK",
+              "content": {
+                "*/*": {
+                  "schema": {
+                    "$ref": "#/components/schemas/TradeOrderResponseDTO"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/v1/tradeOrders/{id}/submit": {
+        "post": {
+          "tags": [
+            "trade-order-controller"
+          ],
+          "operationId": "submitTradeOrder",
+          "parameters": [
+            {
+              "name": "id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "integer",
+                "format": "int32"
+              }
+            }
+          ],
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TradeOrderSubmitDTO"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "200": {
+              "description": "OK",
+              "content": {
+                "*/*": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ExecutionResponseDTO"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/v1/executions": {
+        "get": {
+          "tags": [
+            "execution-controller"
+          ],
+          "operationId": "getAllExecutions",
+          "responses": {
+            "200": {
+              "description": "OK",
+              "content": {
+                "*/*": {
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/ExecutionResponseDTO"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "post": {
+          "tags": [
+            "execution-controller"
+          ],
+          "operationId": "createExecution",
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExecutionPostDTO"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "200": {
+              "description": "OK",
+              "content": {
+                "*/*": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ExecutionResponseDTO"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/v1/executionStatuses": {
+        "get": {
+          "tags": [
+            "execution-status-controller"
+          ],
+          "operationId": "getAllExecutionStatuses",
+          "responses": {
+            "200": {
+              "description": "OK",
+              "content": {
+                "*/*": {
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/ExecutionStatusResponseDTO"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "post": {
+          "tags": [
+            "execution-status-controller"
+          ],
+          "operationId": "createExecutionStatus",
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExecutionStatusPostDTO"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "200": {
+              "description": "OK",
+              "content": {
+                "*/*": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ExecutionStatusResponseDTO"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/v1/execution/{id}/submit": {
+        "post": {
+          "tags": [
+            "execution-submit-controller"
+          ],
+          "operationId": "submitExecution",
+          "parameters": [
+            {
+              "name": "id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "integer",
+                "format": "int32"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "OK",
+              "content": {
+                "*/*": {
+                  "schema": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/v1/destinations": {
+        "get": {
+          "tags": [
+            "destination-controller"
+          ],
+          "operationId": "getAllDestinations",
+          "responses": {
+            "200": {
+              "description": "OK",
+              "content": {
+                "*/*": {
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/DestinationResponseDTO"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "post": {
+          "tags": [
+            "destination-controller"
+          ],
+          "operationId": "createDestination",
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DestinationPostDTO"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "200": {
+              "description": "OK",
+              "content": {
+                "*/*": {
+                  "schema": {
+                    "$ref": "#/components/schemas/DestinationResponseDTO"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/v1/blotters": {
+        "get": {
+          "tags": [
+            "blotter-controller"
+          ],
+          "operationId": "getAllBlotters",
+          "responses": {
+            "200": {
+              "description": "OK",
+              "content": {
+                "*/*": {
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/BlotterResponseDTO"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "post": {
+          "tags": [
+            "blotter-controller"
+          ],
+          "operationId": "createBlotter",
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BlotterPostDTO"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "200": {
+              "description": "OK",
+              "content": {
+                "*/*": {
+                  "schema": {
+                    "$ref": "#/components/schemas/BlotterResponseDTO"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/v1/health/startup": {
+        "get": {
+          "tags": [
+            "health-controller"
+          ],
+          "operationId": "startup",
+          "responses": {
+            "200": {
+              "description": "OK",
+              "content": {
+                "*/*": {
+                  "schema": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/v1/health/readiness": {
+        "get": {
+          "tags": [
+            "health-controller"
+          ],
+          "operationId": "readiness",
+          "responses": {
+            "200": {
+              "description": "OK",
+              "content": {
+                "*/*": {
+                  "schema": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/v1/health/liveness": {
+        "get": {
+          "tags": [
+            "health-controller"
+          ],
+          "operationId": "liveness",
+          "responses": {
+            "200": {
+              "description": "OK",
+              "content": {
+                "*/*": {
+                  "schema": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "components": {
+      "schemas": {
+        "TradeTypePutDTO": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "abbreviation": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "version": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        },
+        "TradeTypeResponseDTO": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "abbreviation": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "version": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        },
+        "TradeOrderPutDTO": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "orderId": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "portfolioId": {
+              "type": "string"
+            },
+            "orderType": {
+              "type": "string"
+            },
+            "securityId": {
+              "type": "string"
+            },
+            "quantity": {
+              "type": "number"
+            },
+            "limitPrice": {
+              "type": "number"
+            },
+            "tradeTimestamp": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "version": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "blotterId": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        },
+        "BlotterResponseDTO": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "abbreviation": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "version": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        },
+        "TradeOrderResponseDTO": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "orderId": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "portfolioId": {
+              "type": "string"
+            },
+            "orderType": {
+              "type": "string"
+            },
+            "securityId": {
+              "type": "string"
+            },
+            "quantity": {
+              "type": "number"
+            },
+            "quantitySent": {
+              "type": "number"
+            },
+            "limitPrice": {
+              "type": "number"
+            },
+            "tradeTimestamp": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "blotter": {
+              "$ref": "#/components/schemas/BlotterResponseDTO"
+            },
+            "submitted": {
+              "type": "boolean"
+            },
+            "version": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        },
+        "ExecutionPutDTO": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "executionTimestamp": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "executionStatusId": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "blotterId": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "tradeTypeId": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "tradeOrderId": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "destinationId": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "quantityOrdered": {
+              "type": "number"
+            },
+            "quantityPlaced": {
+              "type": "number"
+            },
+            "quantityFilled": {
+              "type": "number"
+            },
+            "limitPrice": {
+              "type": "number"
+            },
+            "version": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "executionServiceId": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        },
+        "DestinationResponseDTO": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "abbreviation": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "version": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        },
+        "ExecutionResponseDTO": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "executionTimestamp": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "executionStatus": {
+              "$ref": "#/components/schemas/ExecutionStatusResponseDTO"
+            },
+            "blotter": {
+              "$ref": "#/components/schemas/BlotterResponseDTO"
+            },
+            "tradeType": {
+              "$ref": "#/components/schemas/TradeTypeResponseDTO"
+            },
+            "tradeOrder": {
+              "$ref": "#/components/schemas/TradeOrderResponseDTO"
+            },
+            "destination": {
+              "$ref": "#/components/schemas/DestinationResponseDTO"
+            },
+            "quantityOrdered": {
+              "type": "number"
+            },
+            "quantityPlaced": {
+              "type": "number"
+            },
+            "quantityFilled": {
+              "type": "number"
+            },
+            "limitPrice": {
+              "type": "number"
+            },
+            "version": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "executionServiceId": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        },
+        "ExecutionStatusResponseDTO": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "abbreviation": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "version": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        },
+        "ExecutionPutFillDTO": {
+          "type": "object",
+          "properties": {
+            "executionStatus": {
+              "type": "string"
+            },
+            "quantityFilled": {
+              "type": "number"
+            },
+            "version": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        },
+        "ExecutionStatusPutDTO": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "abbreviation": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "version": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        },
+        "DestinationPutDTO": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "abbreviation": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "version": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        },
+        "BlotterPutDTO": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "abbreviation": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "version": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        },
+        "TradeTypePostDTO": {
+          "type": "object",
+          "properties": {
+            "abbreviation": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            }
+          }
+        },
+        "TradeOrderPostDTO": {
+          "type": "object",
+          "properties": {
+            "orderId": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "portfolioId": {
+              "type": "string"
+            },
+            "orderType": {
+              "type": "string"
+            },
+            "securityId": {
+              "type": "string"
+            },
+            "quantity": {
+              "type": "number"
+            },
+            "limitPrice": {
+              "type": "number"
+            },
+            "tradeTimestamp": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "blotterId": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        },
+        "TradeOrderSubmitDTO": {
+          "type": "object",
+          "properties": {
+            "quantity": {
+              "type": "number"
+            },
+            "destinationId": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        },
+        "ExecutionPostDTO": {
+          "type": "object",
+          "properties": {
+            "executionTimestamp": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "executionStatusId": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "blotterId": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "tradeTypeId": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "tradeOrderId": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "destinationId": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "quantityOrdered": {
+              "type": "number"
+            },
+            "quantityPlaced": {
+              "type": "number"
+            },
+            "quantityFilled": {
+              "type": "number"
+            },
+            "limitPrice": {
+              "type": "number"
+            },
+            "executionServiceId": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        },
+        "ExecutionStatusPostDTO": {
+          "type": "object",
+          "properties": {
+            "abbreviation": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            }
+          }
+        },
+        "DestinationPostDTO": {
+          "type": "object",
+          "properties": {
+            "abbreviation": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            }
+          }
+        },
+        "BlotterPostDTO": {
+          "type": "object",
+          "properties": {
+            "abbreviation": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  }
