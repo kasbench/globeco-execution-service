@@ -63,7 +63,7 @@ class ExecutionServiceImplTest {
         assertThat(refreshed1.get().getExecutionStatus()).isEqualTo("PART");
         assertThat(refreshed1.get().getVersion()).isGreaterThan(saved.getVersion());
         // Second update: add 6, should become FULL
-        ExecutionPutDTO putDTO2 = new ExecutionPutDTO(new BigDecimal("6.00"), new BigDecimal("1.20"), refreshed1.get().getVersion());
+        ExecutionPutDTO putDTO2 = new ExecutionPutDTO(new BigDecimal("10.00"), new BigDecimal("1.20"), refreshed1.get().getVersion());
         Optional<Execution> updated2 = executionService.updateExecution(saved.getId(), putDTO2);
         assertThat(updated2).isPresent();
         // Re-fetch to get the latest version

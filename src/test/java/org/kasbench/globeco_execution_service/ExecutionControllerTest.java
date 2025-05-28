@@ -89,7 +89,7 @@ class ExecutionControllerTest {
         ExecutionDTO refreshed = objectMapper.readValue(refreshedResponse, ExecutionDTO.class);
         org.assertj.core.api.Assertions.assertThat(refreshed.getVersion()).isGreaterThan(created.getVersion());
         // Update again: add 6, should become FULL
-        ExecutionPutDTO putDTO2 = new ExecutionPutDTO(new BigDecimal("6.00"), new BigDecimal("1.20"), refreshed.getVersion());
+        ExecutionPutDTO putDTO2 = new ExecutionPutDTO(new BigDecimal("10.00"), new BigDecimal("1.20"), refreshed.getVersion());
         String putJson2 = objectMapper.writeValueAsString(putDTO2);
         String putResponse2 = mockMvc.perform(put("/api/v1/execution/" + created.getId())
                 .contentType(MediaType.APPLICATION_JSON)

@@ -111,8 +111,8 @@ public class ExecutionServiceImpl implements ExecutionService {
             throw new OptimisticLockingFailureException("Version mismatch for execution with id: " + id);
         }
         // Increment quantityFilled
-        BigDecimal newQuantityFilled = execution.getQuantityFilled() == null ? BigDecimal.ZERO : execution.getQuantityFilled();
-        // newQuantityFilled = newQuantityFilled.add(putDTO.getQuantityFilled());
+        BigDecimal newQuantityFilled = new BigDecimal(0); //execution.getQuantityFilled() == null ? BigDecimal.ZERO : execution.getQuantityFilled();
+        newQuantityFilled = newQuantityFilled.add(putDTO.getQuantityFilled());
         execution.setQuantityFilled(newQuantityFilled);
         // Set averagePrice
         execution.setAveragePrice(putDTO.getAveragePrice());
