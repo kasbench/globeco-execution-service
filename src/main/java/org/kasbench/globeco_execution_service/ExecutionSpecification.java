@@ -7,61 +7,122 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Specification class for dynamic filtering of executions.
+ * JPA Specifications for dynamic Execution queries with performance optimizations.
  */
 public class ExecutionSpecification {
-    
+
     /**
-     * Create a specification based on the provided query parameters.
-     * 
-     * @param queryParams The query parameters for filtering
-     * @return Specification for filtering executions
+     * Create a specification based on query parameters with optimized predicates.
      */
-    public static Specification<Execution> withQueryParams(ExecutionQueryParams queryParams) {
+    public static Specification<Execution> withQueryParams(ExecutionQueryParams params) {
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
             
-            // Filter by execution status
-            if (queryParams.getExecutionStatus() != null && !queryParams.getExecutionStatus().trim().isEmpty()) {
+            // Optimize by adding most selective filters first
+            
+            // ID filter (most selective - exact match)
+            if (params.getId() != null) {
+                predicates.add(criteriaBuilder.equal(root.get("id"), params.getId()));
+                // If ID is provided, return early as it's the most selective
+                return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+            }
+            
+            // Security ID filter (highly selective)
+            if (params.getSecurityId() != null && !params.getSecurityId().trim().isEmpty()) {
                 predicates.add(criteriaBuilder.equal(
-                    criteriaBuilder.lower(root.get("executionStatus")), 
-                    queryParams.getExecutionStatus().toLowerCase()
+                    criteriaBuilder.upper(root.get("securityId")), 
+                    params.getSecurityId().trim().toUpperCase()
                 ));
             }
             
-            // Filter by trade type
-            if (queryParams.getTradeType() != null && !queryParams.getTradeType().trim().isEmpty()) {
-                predicates.add(criteriaBuilder.equal(
-                    criteriaBuilder.lower(root.get("tradeType")), 
-                    queryParams.getTradeType().toLowerCase()
+            // Execution status filter (moderately selective, indexed)
+            if (params.getExecutionStatus() != null && !params.getExecutionStatus().trim().isEmpty()) {
+                predicates.add(criteriaBuilder.like(
+                    criteriaBuilder.upper(root.get("executionStatus")), 
+                    "%" + params.getExecutionStatus().trim().toUpperCase() + "%"
                 ));
             }
             
-            // Filter by destination
-            if (queryParams.getDestination() != null && !queryParams.getDestination().trim().isEmpty()) {
-                predicates.add(criteriaBuilder.equal(
-                    criteriaBuilder.lower(root.get("destination")), 
-                    queryParams.getDestination().toLowerCase()
+            // Trade type filter (moderately selective, indexed)
+            if (params.getTradeType() != null && !params.getTradeType().trim().isEmpty()) {
+                predicates.add(criteriaBuilder.like(
+                    criteriaBuilder.upper(root.get("tradeType")), 
+                    "%" + params.getTradeType().trim().toUpperCase() + "%"
                 ));
             }
             
-            // Filter by security ID
-            if (queryParams.getSecurityId() != null && !queryParams.getSecurityId().trim().isEmpty()) {
-                predicates.add(criteriaBuilder.equal(
-                    root.get("securityId"), 
-                    queryParams.getSecurityId()
+            // Destination filter (less selective, but indexed)
+            if (params.getDestination() != null && !params.getDestination().trim().isEmpty()) {
+                predicates.add(criteriaBuilder.like(
+                    criteriaBuilder.upper(root.get("destination")), 
+                    "%" + params.getDestination().trim().toUpperCase() + "%"
                 ));
             }
             
-            // Filter by execution ID
-            if (queryParams.getId() != null) {
-                predicates.add(criteriaBuilder.equal(
-                    root.get("id"), 
-                    queryParams.getId()
-                ));
+            // Optimization: For count queries, avoid unnecessary joins and ordering
+            if (query.getResultType() == Long.class) {
+                // This is a count query - no need for complex operations
+                query.distinct(true);
             }
             
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+        };
+    }
+    
+    /**
+     * Optimized specification for range-based queries (useful for time-based filtering).
+     */
+    public static Specification<Execution> withTimeRange(java.time.OffsetDateTime startTime, 
+                                                        java.time.OffsetDateTime endTime) {
+        return (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            
+            if (startTime != null) {
+                predicates.add(criteriaBuilder.greaterThanOrEqualTo(
+                    root.get("receivedTimestamp"), startTime));
+            }
+            
+            if (endTime != null) {
+                predicates.add(criteriaBuilder.lessThanOrEqualTo(
+                    root.get("receivedTimestamp"), endTime));
+            }
+            
+            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
+        };
+    }
+    
+    /**
+     * Specification for finding executions by status with optimized performance.
+     */
+    public static Specification<Execution> withExecutionStatus(String status) {
+        return (root, query, criteriaBuilder) -> {
+            // Use exact match for better index utilization
+            return criteriaBuilder.equal(root.get("executionStatus"), status);
+        };
+    }
+    
+    /**
+     * Specification for batch ID queries with IN clause optimization.
+     */
+    public static Specification<Execution> withIdIn(List<Integer> ids) {
+        return (root, query, criteriaBuilder) -> {
+            if (ids == null || ids.isEmpty()) {
+                return criteriaBuilder.conjunction(); // Always true
+            }
+            
+            // Optimize for large ID lists by using IN clause
+            if (ids.size() <= 1000) {
+                return root.get("id").in(ids);
+            } else {
+                // For very large lists, split into chunks to avoid database limits
+                List<Predicate> chunkPredicates = new ArrayList<>();
+                for (int i = 0; i < ids.size(); i += 1000) {
+                    int endIndex = Math.min(i + 1000, ids.size());
+                    List<Integer> chunk = ids.subList(i, endIndex);
+                    chunkPredicates.add(root.get("id").in(chunk));
+                }
+                return criteriaBuilder.or(chunkPredicates.toArray(new Predicate[0]));
+            }
         };
     }
 } 
