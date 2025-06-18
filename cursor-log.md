@@ -129,3 +129,27 @@ Added @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS) to both 
 - **Documentation**: Updated README.md to clarify that `quantityFilled` in the request **replaces** the existing quantity (it is the total quantity filled, not an incremental amount)
 **Status**: Completed - All 25 tests passing, logic changed from incremental to total quantity filling
 
+
+## Entry 7 - 2025-01-27
+**Request**: Review and update `supplemental-requirement-3.md` for clarity and completeness, include the design of modified DTOs, and add an execution plan with checkboxes
+**Action**: Completely redesigned and enhanced the document with:
+- **Structure Enhancement**: Reorganized into clear sections with numbered requirements, detailed specifications, and comprehensive documentation
+- **Detailed API Specifications**: Added complete query parameter tables, request/response examples, HTTP status code mappings, and pagination structure for the enhanced GET endpoint
+- **Batch Processing Design**: Provided comprehensive batch POST endpoint specification with request limits, error handling, and partial success scenarios
+- **Complete DTO Designs**: Included detailed Java class definitions for all 7 new/modified DTOs (ExecutionDTO, SecurityDTO, ExecutionPageDTO, PaginationDTO, BatchExecutionRequestDTO, BatchExecutionResponseDTO, ExecutionResultDTO)
+- **Security Service Integration**: Added detailed caching strategy with Caffeine, cache key structure, TTL configuration, and monitoring considerations
+- **Implementation Plan**: Created comprehensive 6-phase execution plan with 42 checkboxes covering security integration, enhanced endpoints, batch processing, database optimizations, testing, and deployment
+- **Success Criteria**: Added 10 measurable success criteria for validating completion
+**Status**: Completed - Document is now comprehensive, actionable, and ready for implementation with clear DTO designs and detailed execution tracking
+
+
+## Entry 8 - 2025-01-27
+**Request**: Modify sorting in `supplemental-requirement-3.md` to use a single `sortBy` field with comma-separated values and minus prefix for descending order
+**Action**: Updated the sorting specification for consistency with other GlobeCo services:
+- **Query Parameters**: Removed separate `sortOrder` parameter and enhanced `sortBy` to accept comma-separated list of fields
+- **Sorting Logic**: Added support for minus (-) prefix to indicate descending order (default is ascending)
+- **Documentation**: Added comprehensive sorting specification section (1.4) with detailed examples and valid field list
+- **Implementation Plan**: Updated repository and parsing logic tasks to reflect multi-field sorting requirements
+- **Examples**: Provided clear examples showing single field, descending, and multi-field sorting scenarios
+**Status**: Completed - Sorting specification now matches GlobeCo suite consistency requirements
+
