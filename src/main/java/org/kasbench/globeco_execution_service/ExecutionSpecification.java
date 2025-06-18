@@ -14,6 +14,7 @@ public class ExecutionSpecification {
     /**
      * Create a specification based on query parameters with optimized predicates.
      */
+    @SuppressWarnings("null")
     public static Specification<Execution> withQueryParams(ExecutionQueryParams params) {
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
