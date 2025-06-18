@@ -55,4 +55,11 @@ public interface ExecutionService {
      * @return Optional containing the updated execution if found
      */
     Optional<Execution> updateExecution(Integer id, ExecutionPutDTO putDTO);
+    
+    /**
+     * Create multiple executions in a batch operation.
+     * @param batchRequest The batch request containing multiple executions
+     * @return BatchExecutionResponseDTO containing results for each execution
+     */
+    BatchExecutionResponseDTO createBatchExecutions(BatchExecutionRequestDTO batchRequest);
 } 

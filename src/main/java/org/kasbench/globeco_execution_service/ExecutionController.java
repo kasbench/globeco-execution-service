@@ -4,6 +4,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Max;
 import java.util.List;
@@ -77,6 +78,33 @@ public class ExecutionController {
     public ResponseEntity<ExecutionDTO> createExecution(@RequestBody ExecutionPostDTO postDTO) {
         ExecutionDTO dto = executionService.createAndSendExecution(postDTO);
         return new ResponseEntity<>(dto, HttpStatus.CREATED);
+    }
+    
+    /**
+     * Create multiple executions in a batch operation.
+     * @param batchRequest The batch request containing up to 100 executions
+     * @return BatchExecutionResponseDTO with results for each execution
+     */
+    @PostMapping("/executions/batch")
+    public ResponseEntity<BatchExecutionResponseDTO> createBatchExecutions(@Valid @RequestBody BatchExecutionRequestDTO batchRequest) {
+        BatchExecutionResponseDTO response = executionService.createBatchExecutions(batchRequest);
+        
+        // Determine response status based on batch operation result
+        HttpStatus status;
+        switch (response.getStatus()) {
+            case "SUCCESS":
+                status = HttpStatus.CREATED;
+                break;
+            case "PARTIAL_SUCCESS":
+                status = HttpStatus.MULTI_STATUS; // 207
+                break;
+            case "FAILED":
+            default:
+                status = HttpStatus.BAD_REQUEST;
+                break;
+        }
+        
+        return ResponseEntity.status(status).body(response);
     }
 
     /**

@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Value;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -211,6 +212,39 @@ public class ExecutionServiceImpl implements ExecutionService {
         updateTradeServiceAsync(execution);
         
         return Optional.of(execution);
+    }
+    
+    @Override
+    @Transactional
+    public BatchExecutionResponseDTO createBatchExecutions(BatchExecutionRequestDTO batchRequest) {
+        List<ExecutionResultDTO> results = new ArrayList<>();
+        
+        // Process each execution in the batch
+        for (int i = 0; i < batchRequest.getExecutions().size(); i++) {
+            ExecutionPostDTO postDTO = batchRequest.getExecutions().get(i);
+            
+            try {
+                // Create individual execution using existing method
+                ExecutionDTO executionDTO = createAndSendExecution(postDTO);
+                results.add(ExecutionResultDTO.success(i, executionDTO));
+                
+                logger.debug("Successfully created execution {} (index {}) in batch", 
+                    executionDTO.getId(), i);
+                    
+            } catch (Exception e) {
+                // Log the error and continue with other executions
+                logger.error("Failed to create execution at index {} in batch: {}", i, e.getMessage(), e);
+                results.add(ExecutionResultDTO.failure(i, e.getMessage()));
+            }
+        }
+        
+        // Create and return the batch response
+        BatchExecutionResponseDTO response = BatchExecutionResponseDTO.fromResults(results);
+        
+        logger.info("Batch execution completed: {} successful, {} failed out of {} total", 
+            response.getSuccessful(), response.getFailed(), response.getTotalRequested());
+            
+        return response;
     }
     
     /**
