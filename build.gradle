@@ -36,6 +36,7 @@ dependencies {
 	testImplementation 'org.springframework.kafka:spring-kafka-test'
 	testImplementation 'org.testcontainers:kafka'
 	testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+	testImplementation 'org.wiremock:wiremock:3.3.1'
 
 
 

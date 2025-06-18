@@ -29,9 +29,9 @@ public class ExecutionDTO {
     private String destination;
     
     /**
-     * The security identifier (24 characters).
+     * The security information including ID and ticker.
      */
-    private String securityId;
+    private SecurityDTO security;
     
     /**
      * The quantity to trade.
@@ -75,12 +75,12 @@ public class ExecutionDTO {
 
     public ExecutionDTO() {}
 
-    public ExecutionDTO(Integer id, String executionStatus, String tradeType, String destination, String securityId, BigDecimal quantity, BigDecimal limitPrice, OffsetDateTime receivedTimestamp, OffsetDateTime sentTimestamp, Integer tradeServiceExecutionId, BigDecimal quantityFilled, BigDecimal averagePrice, Integer version) {
+    public ExecutionDTO(Integer id, String executionStatus, String tradeType, String destination, SecurityDTO security, BigDecimal quantity, BigDecimal limitPrice, OffsetDateTime receivedTimestamp, OffsetDateTime sentTimestamp, Integer tradeServiceExecutionId, BigDecimal quantityFilled, BigDecimal averagePrice, Integer version) {
         this.id = id;
         this.executionStatus = executionStatus;
         this.tradeType = tradeType;
         this.destination = destination;
-        this.securityId = securityId;
+        this.security = security;
         this.quantity = quantity;
         this.limitPrice = limitPrice;
         this.receivedTimestamp = receivedTimestamp;
@@ -99,8 +99,8 @@ public class ExecutionDTO {
     public void setTradeType(String tradeType) { this.tradeType = tradeType; }
     public String getDestination() { return destination; }
     public void setDestination(String destination) { this.destination = destination; }
-    public String getSecurityId() { return securityId; }
-    public void setSecurityId(String securityId) { this.securityId = securityId; }
+    public SecurityDTO getSecurity() { return security; }
+    public void setSecurity(SecurityDTO security) { this.security = security; }
     public BigDecimal getQuantity() { return quantity; }
     public void setQuantity(BigDecimal quantity) { this.quantity = quantity; }
     public BigDecimal getLimitPrice() { return limitPrice; }
@@ -117,6 +117,22 @@ public class ExecutionDTO {
     public void setAveragePrice(BigDecimal averagePrice) { this.averagePrice = averagePrice; }
     public Integer getVersion() { return version; }
     public void setVersion(Integer version) { this.version = version; }
+    
+    /**
+     * Convenience method to get security ID for backward compatibility.
+     * @return The security ID if security is set, null otherwise
+     */
+    public String getSecurityId() {
+        return security != null ? security.getSecurityId() : null;
+    }
+    
+    /**
+     * Convenience method to get ticker symbol.
+     * @return The ticker if security is set, null otherwise
+     */
+    public String getTicker() {
+        return security != null ? security.getTicker() : null;
+    }
 
     @Override
     public boolean equals(Object o) {
@@ -127,7 +143,7 @@ public class ExecutionDTO {
                 Objects.equals(executionStatus, that.executionStatus) &&
                 Objects.equals(tradeType, that.tradeType) &&
                 Objects.equals(destination, that.destination) &&
-                Objects.equals(securityId, that.securityId) &&
+                Objects.equals(security, that.security) &&
                 Objects.equals(quantity, that.quantity) &&
                 Objects.equals(limitPrice, that.limitPrice) &&
                 Objects.equals(receivedTimestamp, that.receivedTimestamp) &&
@@ -140,6 +156,6 @@ public class ExecutionDTO {
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, executionStatus, tradeType, destination, securityId, quantity, limitPrice, receivedTimestamp, sentTimestamp, tradeServiceExecutionId, quantityFilled, averagePrice, version);
+        return Objects.hash(id, executionStatus, tradeType, destination, security, quantity, limitPrice, receivedTimestamp, sentTimestamp, tradeServiceExecutionId, quantityFilled, averagePrice, version);
     }
 } 

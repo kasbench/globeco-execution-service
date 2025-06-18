@@ -4,6 +4,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Max;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -21,12 +23,31 @@ public class ExecutionController {
     }
 
     /**
-     * Get all executions.
-     * @return List of all executions
+     * Get executions with optional filtering, sorting, and pagination.
+     * @param offset Number of records to skip (default: 0)
+     * @param limit Maximum records to return (default: 50, max: 100)
+     * @param executionStatus Filter by execution status
+     * @param tradeType Filter by trade type
+     * @param destination Filter by destination
+     * @param securityId Filter by security ID
+     * @param sortBy Comma-separated sort fields with optional minus prefix for descending (default: "id")
+     * @return ExecutionPageDTO containing the filtered and paginated results
      */
     @GetMapping("/executions")
-    public List<ExecutionDTO> getAllExecutions() {
-        return executionService.findAll().stream().map(this::toDTO).collect(Collectors.toList());
+    public ExecutionPageDTO getAllExecutions(
+            @RequestParam(value = "offset", defaultValue = "0") @Min(0) Integer offset,
+            @RequestParam(value = "limit", defaultValue = "50") @Min(1) @Max(100) Integer limit,
+            @RequestParam(value = "executionStatus", required = false) String executionStatus,
+            @RequestParam(value = "tradeType", required = false) String tradeType,
+            @RequestParam(value = "destination", required = false) String destination,
+            @RequestParam(value = "securityId", required = false) String securityId,
+            @RequestParam(value = "sortBy", defaultValue = "id") String sortBy) {
+        
+        ExecutionQueryParams queryParams = new ExecutionQueryParams(
+            offset, limit, executionStatus, tradeType, destination, securityId, sortBy
+        );
+        
+        return executionService.findExecutions(queryParams);
     }
 
     /**
@@ -36,9 +57,15 @@ public class ExecutionController {
      */
     @GetMapping("/execution/{id}")
     public ResponseEntity<ExecutionDTO> getExecutionById(@PathVariable("id") Integer id) {
-        Optional<Execution> execution = executionService.findById(id);
-        return execution.map(value -> ResponseEntity.ok(toDTO(value)))
-                .orElseGet(() -> ResponseEntity.notFound().build());
+        // Use a query to get the single execution with security info
+        ExecutionQueryParams queryParams = new ExecutionQueryParams(id);
+        ExecutionPageDTO result = executionService.findExecutions(queryParams);
+        
+        if (result.getContent().isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        
+        return ResponseEntity.ok(result.getContent().get(0));
     }
 
     /**
@@ -61,26 +88,19 @@ public class ExecutionController {
     @PutMapping("/execution/{id}")
     public ResponseEntity<ExecutionDTO> updateExecution(@PathVariable("id") Integer id, @RequestBody ExecutionPutDTO putDTO) {
         Optional<Execution> updated = executionService.updateExecution(id, putDTO);
-        return updated.map(value -> ResponseEntity.ok(toDTO(value)))
-                .orElseGet(() -> ResponseEntity.notFound().build());
-    }
-
-    private ExecutionDTO toDTO(Execution execution) {
-        return new ExecutionDTO(
-                execution.getId(),
-                execution.getExecutionStatus(),
-                execution.getTradeType(),
-                execution.getDestination(),
-                execution.getSecurityId(),
-                execution.getQuantity(),
-                execution.getLimitPrice(),
-                execution.getReceivedTimestamp(),
-                execution.getSentTimestamp(),
-                execution.getTradeServiceExecutionId(),
-                execution.getQuantityFilled(),
-                execution.getAveragePrice(),
-                execution.getVersion()
-        );
+        if (updated.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        
+        // Get the updated execution with security info using our enhanced query
+        ExecutionQueryParams queryParams = new ExecutionQueryParams(id);
+        ExecutionPageDTO result = executionService.findExecutions(queryParams);
+        
+        if (result.getContent().isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        
+        return ResponseEntity.ok(result.getContent().get(0));
     }
 
 } 

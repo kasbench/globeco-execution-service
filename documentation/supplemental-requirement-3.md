@@ -290,26 +290,26 @@ public class ExecutionResultDTO {
 ## Implementation Plan
 
 ### Phase 1: Security Service Integration
-- [ ] Create `SecurityDTO` class
-- [ ] Create `SecurityServiceClient` interface
-- [ ] Implement `SecurityServiceClientImpl` with RestTemplate/WebClient
-- [ ] Configure Caffeine cache for security mappings
-- [ ] Add cache configuration properties
-- [ ] Write unit tests for security service client
-- [ ] Write integration tests with WireMock
+- [x] Create `SecurityDTO` class
+- [x] Create `SecurityServiceClient` interface
+- [x] Implement `SecurityServiceClientImpl` with RestTemplate/WebClient
+- [x] Configure Caffeine cache for security mappings
+- [x] Add cache configuration properties
+- [x] Write unit tests for security service client
+- [x] Write integration tests with WireMock
 
 ### Phase 2: Enhanced GET Endpoint
-- [ ] Create `PaginationDTO` class
-- [ ] Create `ExecutionPageDTO` class
-- [ ] Modify `ExecutionDTO` to use `SecurityDTO` instead of `securityId`
-- [ ] Update `ExecutionRepository` with query methods for filtering and multi-field sorting
-- [ ] Implement pagination support in repository layer
-- [ ] Add parsing logic for comma-separated sortBy parameter with minus prefix handling
-- [ ] Modify `ExecutionService.findAll()` to support filtering and pagination
-- [ ] Update `ExecutionController.getAllExecutions()` with query parameters
-- [ ] Add request validation for query parameters
-- [ ] Write unit tests for new repository methods
-- [ ] Write integration tests for enhanced GET endpoint
+- [x] Create `PaginationDTO` class
+- [x] Create `ExecutionPageDTO` class
+- [x] Modify `ExecutionDTO` to use `SecurityDTO` instead of `securityId`
+- [x] Update `ExecutionRepository` with query methods for filtering and multi-field sorting
+- [x] Implement pagination support in repository layer
+- [x] Add parsing logic for comma-separated sortBy parameter with minus prefix handling
+- [x] Modify `ExecutionService.findAll()` to support filtering and pagination
+- [x] Update `ExecutionController.getAllExecutions()` with query parameters
+- [x] Add request validation for query parameters
+- [x] Write unit tests for new repository methods
+- [x] Write integration tests for enhanced GET endpoint
 
 ### Phase 3: Batch POST Endpoint
 - [ ] Create `BatchExecutionRequestDTO` class

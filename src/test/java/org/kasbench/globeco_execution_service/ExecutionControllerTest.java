@@ -63,7 +63,10 @@ class ExecutionControllerTest {
         executionService.save(new Execution(null, "NEW", "SELL", "NASDAQ", "SEC123456789012345678901", new BigDecimal("50.00"), null, OffsetDateTime.now(), null, 1, BigDecimal.ZERO, null, 1));
         mockMvc.perform(get("/api/v1/executions"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").exists());
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.content[0].id").exists())
+                .andExpect(jsonPath("$.pagination").exists())
+                .andExpect(jsonPath("$.pagination.totalElements").exists());
     }
 
     @Test

@@ -3,6 +3,11 @@ package org.kasbench.globeco_execution_service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -12,6 +17,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class ExecutionServiceImpl implements ExecutionService {
@@ -20,16 +26,19 @@ public class ExecutionServiceImpl implements ExecutionService {
     private final ExecutionRepository executionRepository;
     private final KafkaTemplate<String, ExecutionDTO> kafkaTemplate;
     private final TradeServiceClient tradeServiceClient;
+    private final SecurityServiceClient securityServiceClient;
     private final String ordersTopic;
 
     public ExecutionServiceImpl(
             ExecutionRepository executionRepository, 
             KafkaTemplate<String, ExecutionDTO> kafkaTemplate, 
             TradeServiceClient tradeServiceClient,
+            SecurityServiceClient securityServiceClient,
             @Value("${kafka.topic.orders:orders}") String ordersTopic) {
         this.executionRepository = executionRepository;
         this.kafkaTemplate = kafkaTemplate;
         this.tradeServiceClient = tradeServiceClient;
+        this.securityServiceClient = securityServiceClient;
         this.ordersTopic = ordersTopic;
     }
 
@@ -49,6 +58,84 @@ public class ExecutionServiceImpl implements ExecutionService {
     @Transactional(readOnly = true)
     public List<Execution> findAll() {
         return executionRepository.findAll();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ExecutionPageDTO findExecutions(ExecutionQueryParams queryParams) {
+        // Parse sort parameters
+        Sort sort = SortUtils.parseSortBy(queryParams.getSortBy());
+        
+        // Create pageable
+        Pageable pageable = PageRequest.of(
+            queryParams.getOffset() / queryParams.getLimit(), 
+            queryParams.getLimit(), 
+            sort
+        );
+        
+        // Create specification for filtering
+        Specification<Execution> spec = ExecutionSpecification.withQueryParams(queryParams);
+        
+        // Execute query
+        Page<Execution> page = executionRepository.findAll(spec, pageable);
+        
+        // Convert to DTOs with security information
+        List<ExecutionDTO> executionDTOs = page.getContent().stream()
+            .map(this::convertToDTO)
+            .collect(Collectors.toList());
+        
+        // Create pagination metadata
+        PaginationDTO pagination = new PaginationDTO(
+            queryParams.getOffset(),
+            queryParams.getLimit(),
+            page.getTotalElements(),
+            page.getTotalPages(),
+            page.getNumber(),
+            page.hasNext(),
+            page.hasPrevious()
+        );
+        
+        return new ExecutionPageDTO(executionDTOs, pagination);
+    }
+    
+    /**
+     * Convert Execution entity to ExecutionDTO with security information.
+     */
+    private ExecutionDTO convertToDTO(Execution execution) {
+        // Get security information
+        SecurityDTO security = null;
+        if (execution.getSecurityId() != null) {
+            try {
+                Optional<SecurityDTO> securityOpt = securityServiceClient.getSecurityById(execution.getSecurityId());
+                if (securityOpt.isPresent()) {
+                    security = securityOpt.get();
+                } else {
+                    // Create a security DTO with just the ID if not found
+                    security = new SecurityDTO(execution.getSecurityId(), null);
+                }
+            } catch (Exception e) {
+                logger.warn("Failed to get security info for securityId {}: {}", 
+                    execution.getSecurityId(), e.getMessage());
+                // Create a security DTO with just the ID if the service call fails
+                security = new SecurityDTO(execution.getSecurityId(), null);
+            }
+        }
+        
+        return new ExecutionDTO(
+            execution.getId(),
+            execution.getExecutionStatus(),
+            execution.getTradeType(),
+            execution.getDestination(),
+            security,
+            execution.getQuantity(),
+            execution.getLimitPrice(),
+            execution.getReceivedTimestamp(),
+            execution.getSentTimestamp(),
+            execution.getTradeServiceExecutionId(),
+            execution.getQuantityFilled(),
+            execution.getAveragePrice(),
+            execution.getVersion()
+        );
     }
 
     @Override
@@ -87,22 +174,8 @@ public class ExecutionServiceImpl implements ExecutionService {
         // 3. Update DB with sentTimestamp
         execution.setSentTimestamp(sentTimestamp);
         execution = executionRepository.saveAndFlush(execution);
-        // 5. Create DTO with correct version after final save
-        ExecutionDTO dto = new ExecutionDTO(
-                execution.getId(),
-                execution.getExecutionStatus(),
-                execution.getTradeType(),
-                execution.getDestination(),
-                execution.getSecurityId(),
-                execution.getQuantity(),
-                execution.getLimitPrice(),
-                execution.getReceivedTimestamp(),
-                sentTimestamp,
-                execution.getTradeServiceExecutionId(),
-                execution.getQuantityFilled(),
-                execution.getAveragePrice(),
-                execution.getVersion()
-        );
+        // 5. Create DTO with correct version after final save using the conversion method
+        ExecutionDTO dto = convertToDTO(execution);
         // 5. Send ExecutionDTO to Kafka
         kafkaTemplate.send(ordersTopic, dto);
         return dto;

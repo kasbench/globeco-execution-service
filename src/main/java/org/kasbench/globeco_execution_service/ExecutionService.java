@@ -28,6 +28,13 @@ public interface ExecutionService {
     List<Execution> findAll();
     
     /**
+     * Find executions with filtering, sorting, and pagination.
+     * @param queryParams The query parameters for filtering and pagination
+     * @return ExecutionPageDTO containing the filtered and paginated results
+     */
+    ExecutionPageDTO findExecutions(ExecutionQueryParams queryParams);
+    
+    /**
      * Delete an execution by ID with optimistic locking.
      * @param id The execution ID
      * @param version The expected version for optimistic locking
