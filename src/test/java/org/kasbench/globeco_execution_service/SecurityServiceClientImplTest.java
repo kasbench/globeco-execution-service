@@ -220,8 +220,18 @@ class SecurityServiceClientImplTest {
         Map<String, Object> stats = securityServiceClient.getCacheStats();
 
         // Then
-        assertThat(stats).containsKeys("size", "hitRate", "hitCount", "missCount", "evictionCount", "averageLoadPenalty");
-        assertThat(stats.get("size")).isEqualTo(0L);
+        assertThat(stats).containsKeys("tickerCache", "reverseTickerCache", "totalSize", "combinedHitRate");
+        assertThat(stats.get("totalSize")).isEqualTo(0L);
+        
+        // Verify nested ticker cache stats
+        Map<String, Object> tickerCacheStats = (Map<String, Object>) stats.get("tickerCache");
+        assertThat(tickerCacheStats).containsKeys("size", "hitRate", "hitCount", "missCount", "evictionCount", "averageLoadPenalty");
+        assertThat(tickerCacheStats.get("size")).isEqualTo(0L);
+        
+        // Verify nested reverse ticker cache stats
+        Map<String, Object> reverseTickerCacheStats = (Map<String, Object>) stats.get("reverseTickerCache");
+        assertThat(reverseTickerCacheStats).containsKeys("size", "hitRate", "hitCount", "missCount", "evictionCount", "averageLoadPenalty");
+        assertThat(reverseTickerCacheStats.get("size")).isEqualTo(0L);
     }
 
     @Test

@@ -21,4 +21,12 @@ public interface SecurityServiceClient {
      * @return Optional containing ticker if found, empty otherwise
      */
     Optional<String> getTickerBySecurityId(String securityId);
+    
+    /**
+     * Get security ID by ticker symbol with caching.
+     * 
+     * @param ticker The ticker symbol
+     * @return Optional containing security ID if found, empty otherwise
+     */
+    Optional<String> getSecurityIdByTicker(String ticker);
 } 

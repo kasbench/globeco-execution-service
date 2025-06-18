@@ -86,12 +86,22 @@ class SecurityServiceClientIntegrationTest {
         var stats = securityServiceClient.getCacheStats();
 
         // Then
-        assertThat(stats).containsKeys("size", "hitRate", "hitCount", "missCount", "evictionCount", "averageLoadPenalty");
-        assertThat(stats.get("size")).isEqualTo(0L);
-        assertThat(stats.get("hitCount")).isEqualTo(0L);
-        assertThat(stats.get("missCount")).isEqualTo(0L);
+        assertThat(stats).containsKeys("tickerCache", "reverseTickerCache", "totalSize", "combinedHitRate");
+        assertThat(stats.get("totalSize")).isEqualTo(0L);
+        
+        // Verify nested ticker cache stats
+        var tickerCacheStats = (java.util.Map<String, Object>) stats.get("tickerCache");
+        assertThat(tickerCacheStats).containsKeys("size", "hitRate", "hitCount", "missCount", "evictionCount", "averageLoadPenalty");
+        assertThat(tickerCacheStats.get("size")).isEqualTo(0L);
+        assertThat(tickerCacheStats.get("hitCount")).isEqualTo(0L);
+        assertThat(tickerCacheStats.get("missCount")).isEqualTo(0L);
         // Note: hitRate may be NaN when no operations have been performed, so we just check it exists
-        assertThat(stats.get("hitRate")).isNotNull();
+        assertThat(tickerCacheStats.get("hitRate")).isNotNull();
+        
+        // Verify nested reverse ticker cache stats
+        var reverseTickerCacheStats = (java.util.Map<String, Object>) stats.get("reverseTickerCache");
+        assertThat(reverseTickerCacheStats).containsKeys("size", "hitRate", "hitCount", "missCount", "evictionCount", "averageLoadPenalty");
+        assertThat(reverseTickerCacheStats.get("size")).isEqualTo(0L);
     }
 
     @Test
@@ -109,7 +119,7 @@ class SecurityServiceClientIntegrationTest {
         var initialStats = securityServiceClient.getCacheStats();
         
         // Then - Verify initial state
-        assertThat(initialStats.get("size")).isEqualTo(0L);
+        assertThat(initialStats.get("totalSize")).isEqualTo(0L);
         
         // Note: Full integration testing with actual service calls would require 
         // either a real Security Service instance or more complex WireMock setup.

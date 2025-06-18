@@ -29,7 +29,7 @@ Retrieve executions with optional filtering, sorting, and pagination support.
 | `executionStatus` | String | No | - | Filter by execution status | `NEW` |
 | `tradeType` | String | No | - | Filter by trade type | `BUY` |
 | `destination` | String | No | - | Filter by destination exchange | `NYSE` |
-| `securityId` | String | No | - | Filter by security identifier | `SEC001` |
+| `ticker` | String | No | - | Filter by ticker symbol | `AAPL` |
 | `sortBy` | String | No | `id` | Comma-separated sort fields with optional minus prefix for descending | `receivedTimestamp,-id` |
 
 #### Valid Sort Fields
@@ -41,6 +41,7 @@ Retrieve executions with optional filtering, sorting, and pagination support.
 - `destination` - Target exchange
 - `quantity` - Order quantity
 - `limitPrice` - Limit price
+- `ticker` - Security ticker symbol
 
 #### Response
 
@@ -93,7 +94,7 @@ GET /api/v1/executions?executionStatus=NEW&sortBy=-receivedTimestamp
 GET /api/v1/executions?tradeType=BUY&destination=NYSE&offset=20&limit=10
 
 # Complex filtering with multiple parameters
-GET /api/v1/executions?executionStatus=FILLED&securityId=SEC001&sortBy=receivedTimestamp,id
+GET /api/v1/executions?executionStatus=FILLED&ticker=AAPL&sortBy=receivedTimestamp,id
 ```
 
 ### 2. Get Execution by ID
@@ -484,7 +485,7 @@ curl -X POST http://localhost:8084/api/v1/executions/batch \
   }'
 
 # 2. Get executions with filtering
-curl "http://localhost:8084/api/v1/executions?executionStatus=NEW&limit=10"
+curl "http://localhost:8084/api/v1/executions?executionStatus=NEW&ticker=AAPL&limit=10"
 
 # 3. Get specific execution
 curl "http://localhost:8084/api/v1/execution/1"
@@ -511,15 +512,23 @@ curl -X PUT http://localhost:8084/api/v1/execution/1 \
    - Responses now wrapped in `ExecutionPageDTO` with `content` and `pagination` fields
    - Update client code to access `response.content` for execution list
 
-3. **Enhanced Filtering Parameters**
+3. **Query Parameter Change: securityId → ticker**
+   - **BREAKING CHANGE**: The `securityId` query parameter has been replaced with `ticker` for filtering
+   - Update client code to use `ticker=AAPL` instead of `securityId=SEC001`
+   - This change makes the API more user-friendly by allowing filtering by ticker symbols
+   - Ticker filtering uses in-memory caching with 5-minute TTL for optimal performance
+
+4. **Enhanced Filtering Parameters**
    - Multiple new query parameters available for filtering
-   - Existing behavior preserved, no breaking changes to current filters
+   - Existing behavior preserved for non-breaking parameter changes
 
 ### Recommended Migration Steps
 
 1. Update client DTOs to match new `ExecutionDTO` and `ExecutionPageDTO` structures
-2. Test batch processing functionality in development environment
-3. Update any hardcoded security ID references to use new security object structure
-4. Validate pagination handling in client applications
+2. **Update filtering logic**: Replace `securityId` query parameter with `ticker` in all API calls
+3. Test batch processing functionality in development environment
+4. Update any hardcoded security ID references to use new security object structure
+5. Validate pagination handling in client applications
+6. Test ticker-based filtering to ensure expected results
 
 For assistance with migration, contact the development team at dev@globeco.com. 

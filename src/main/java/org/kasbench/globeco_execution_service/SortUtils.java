@@ -15,12 +15,13 @@ public class SortUtils {
     // Valid sortable fields as per requirements
     private static final Set<String> VALID_SORT_FIELDS = Set.of(
         "id", "executionStatus", "tradeType", "destination", 
-        "securityId", "quantity", "receivedTimestamp", "sentTimestamp"
+        "ticker", "quantity", "receivedTimestamp", "sentTimestamp"
     );
     
     /**
      * Parse comma-separated sortBy parameter into Spring Data Sort object.
      * Supports minus (-) prefix for descending order.
+     * Maps ticker sorting to securityId since that's the actual entity field.
      * 
      * @param sortBy Comma-separated list of fields with optional minus prefix
      * @return Sort object for Spring Data queries
@@ -50,7 +51,9 @@ public class SortUtils {
             
             // Validate field name
             if (VALID_SORT_FIELDS.contains(fieldName)) {
-                orders.add(new Sort.Order(direction, fieldName));
+                // Map ticker to securityId for entity-level sorting
+                String entityFieldName = "ticker".equals(fieldName) ? "securityId" : fieldName;
+                orders.add(new Sort.Order(direction, entityFieldName));
             } else {
                 // Invalid field names are ignored as per requirements
                 continue;

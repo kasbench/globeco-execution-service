@@ -96,14 +96,14 @@ class SortUtilsTest {
     
     @Test
     void testParseSortBy_AllValidFields() {
-        String allFields = "id,executionStatus,tradeType,destination,securityId,quantity,receivedTimestamp,sentTimestamp";
+        String allFields = "id,executionStatus,tradeType,destination,ticker,quantity,receivedTimestamp,sentTimestamp";
         Sort result = SortUtils.parseSortBy(allFields);
         
         assertThat(result.getOrderFor("id")).isNotNull();
         assertThat(result.getOrderFor("executionStatus")).isNotNull();
         assertThat(result.getOrderFor("tradeType")).isNotNull();
         assertThat(result.getOrderFor("destination")).isNotNull();
-        assertThat(result.getOrderFor("securityId")).isNotNull();
+        assertThat(result.getOrderFor("securityId")).isNotNull(); // ticker gets mapped to securityId
         assertThat(result.getOrderFor("quantity")).isNotNull();
         assertThat(result.getOrderFor("receivedTimestamp")).isNotNull();
         assertThat(result.getOrderFor("sentTimestamp")).isNotNull();
@@ -124,7 +124,7 @@ class SortUtilsTest {
         
         assertThat(validFields).containsExactlyInAnyOrder(
             "id", "executionStatus", "tradeType", "destination", 
-            "securityId", "quantity", "receivedTimestamp", "sentTimestamp"
+            "ticker", "quantity", "receivedTimestamp", "sentTimestamp"
         );
     }
 } 

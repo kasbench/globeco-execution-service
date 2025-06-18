@@ -27,6 +27,7 @@ public class SecurityServiceClientImpl implements SecurityServiceClient {
     private final RestTemplate restTemplate;
     private final String securityServiceBaseUrl;
     private final Cache<String, String> tickerCache;
+    private final Cache<String, String> reverseTickerCache;
     
     public SecurityServiceClientImpl(
             @Qualifier("securityServiceRestTemplate") RestTemplate restTemplate,
@@ -34,6 +35,11 @@ public class SecurityServiceClientImpl implements SecurityServiceClient {
         this.restTemplate = restTemplate;
         this.securityServiceBaseUrl = securityServiceBaseUrl;
         this.tickerCache = Caffeine.newBuilder()
+                .maximumSize(10000)
+                .expireAfterWrite(Duration.ofMinutes(5))
+                .recordStats()
+                .build();
+        this.reverseTickerCache = Caffeine.newBuilder()
                 .maximumSize(10000)
                 .expireAfterWrite(Duration.ofMinutes(5))
                 .recordStats()
@@ -133,17 +139,32 @@ public class SecurityServiceClientImpl implements SecurityServiceClient {
     
     /**
      * Get cache statistics for monitoring endpoints.
-     * @return Cache statistics
+     * @return Cache statistics for both caches
      */
     public Map<String, Object> getCacheStats() {
-        var stats = tickerCache.stats();
+        var tickerStats = tickerCache.stats();
+        var reverseTickerStats = reverseTickerCache.stats();
+        
         return Map.of(
-                "size", tickerCache.estimatedSize(),
-                "hitRate", stats.hitRate(),
-                "hitCount", stats.hitCount(),
-                "missCount", stats.missCount(),
-                "evictionCount", stats.evictionCount(),
-                "averageLoadPenalty", stats.averageLoadPenalty()
+                "tickerCache", Map.of(
+                        "size", tickerCache.estimatedSize(),
+                        "hitRate", tickerStats.hitRate(),
+                        "hitCount", tickerStats.hitCount(),
+                        "missCount", tickerStats.missCount(),
+                        "evictionCount", tickerStats.evictionCount(),
+                        "averageLoadPenalty", tickerStats.averageLoadPenalty()
+                ),
+                "reverseTickerCache", Map.of(
+                        "size", reverseTickerCache.estimatedSize(),
+                        "hitRate", reverseTickerStats.hitRate(),
+                        "hitCount", reverseTickerStats.hitCount(),
+                        "missCount", reverseTickerStats.missCount(),
+                        "evictionCount", reverseTickerStats.evictionCount(),
+                        "averageLoadPenalty", reverseTickerStats.averageLoadPenalty()
+                ),
+                "totalSize", tickerCache.estimatedSize() + reverseTickerCache.estimatedSize(),
+                "combinedHitRate", (tickerStats.hitCount() + reverseTickerStats.hitCount()) / 
+                                  (double)(tickerStats.requestCount() + reverseTickerStats.requestCount())
         );
     }
     
@@ -152,6 +173,81 @@ public class SecurityServiceClientImpl implements SecurityServiceClient {
      */
     public void clearCache() {
         tickerCache.invalidateAll();
+        reverseTickerCache.invalidateAll();
         logger.info("Security service cache cleared");
+    }
+    
+    @Override
+    public Optional<String> getSecurityIdByTicker(String ticker) {
+        if (ticker == null || ticker.trim().isEmpty()) {
+            logger.warn("Ticker is null or empty");
+            return Optional.empty();
+        }
+        
+        String cacheKey = "ticker:" + ticker.trim().toUpperCase();
+        
+        // Check cache first
+        String cachedSecurityId = reverseTickerCache.getIfPresent(cacheKey);
+        if (cachedSecurityId != null) {
+            logger.debug("Cache hit for ticker: {}", ticker);
+            logReverseCacheStats();
+            return Optional.of(cachedSecurityId);
+        }
+        
+        logger.debug("Cache miss for ticker: {}", ticker);
+        
+        // Fetch from Security Service using ticker parameter
+        try {
+            String url = UriComponentsBuilder
+                    .fromHttpUrl(securityServiceBaseUrl + "/api/v2/securities")
+                    .queryParam("ticker", ticker.trim())
+                    .toUriString();
+            
+            logger.debug("Calling Security Service for ticker: {}", url);
+            
+            ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
+            
+            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+                Map<String, Object> responseBody = response.getBody();
+                List<Map<String, Object>> securities = (List<Map<String, Object>>) responseBody.get("securities");
+                
+                if (securities != null && !securities.isEmpty()) {
+                    Map<String, Object> security = securities.get(0);
+                    String securityId = (String) security.get("securityId");
+                    String responseTicker = (String) security.get("ticker");
+                    
+                    // Cache both directions if we have valid data
+                    if (securityId != null && responseTicker != null) {
+                        reverseTickerCache.put(cacheKey, securityId);
+                        tickerCache.put("security:" + securityId, responseTicker);
+                        logger.debug("Cached security ID {} for ticker {}", securityId, ticker);
+                    }
+                    
+                    logReverseCacheStats();
+                    return Optional.of(securityId);
+                }
+            }
+            
+            logger.warn("Security not found for ticker: {}", ticker);
+            logReverseCacheStats();
+            return Optional.empty();
+            
+        } catch (Exception e) {
+            logger.error("Error calling Security Service for ticker {}: {}", ticker, e.getMessage(), e);
+            logReverseCacheStats();
+            return Optional.empty();
+        }
+    }
+    
+    /**
+     * Log reverse cache statistics for monitoring.
+     */
+    private void logReverseCacheStats() {
+        var stats = reverseTickerCache.stats();
+        logger.debug("Reverse cache stats - Size: {}, Hit rate: {:.2f}%, Miss count: {}, Eviction count: {}", 
+                reverseTickerCache.estimatedSize(),
+                stats.hitRate() * 100,
+                stats.missCount(),
+                stats.evictionCount());
     }
 } 

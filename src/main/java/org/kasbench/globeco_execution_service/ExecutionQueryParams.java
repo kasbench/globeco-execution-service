@@ -16,7 +16,7 @@ public class ExecutionQueryParams {
     private String executionStatus;
     private String tradeType;
     private String destination;
-    private String securityId;
+    private String ticker;
     
     // Sorting parameters
     private String sortBy = "id";
@@ -24,13 +24,13 @@ public class ExecutionQueryParams {
     public ExecutionQueryParams() {}
     
     public ExecutionQueryParams(Integer offset, Integer limit, String executionStatus, 
-                               String tradeType, String destination, String securityId, String sortBy) {
+                               String tradeType, String destination, String ticker, String sortBy) {
         this.offset = offset != null ? offset : 0;
         this.limit = limit != null && limit <= 100 ? limit : 50; // Max 100 per requirements
         this.executionStatus = executionStatus;
         this.tradeType = tradeType;
         this.destination = destination;
-        this.securityId = securityId;
+        this.ticker = ticker;
         this.sortBy = sortBy != null ? sortBy : "id";
     }
     
@@ -89,12 +89,12 @@ public class ExecutionQueryParams {
         this.destination = destination; 
     }
     
-    public String getSecurityId() { 
-        return securityId; 
+    public String getTicker() { 
+        return ticker; 
     }
     
-    public void setSecurityId(String securityId) { 
-        this.securityId = securityId; 
+    public void setTicker(String ticker) { 
+        this.ticker = ticker; 
     }
     
     public String getSortBy() { 
@@ -116,13 +116,13 @@ public class ExecutionQueryParams {
                 Objects.equals(executionStatus, that.executionStatus) &&
                 Objects.equals(tradeType, that.tradeType) &&
                 Objects.equals(destination, that.destination) &&
-                Objects.equals(securityId, that.securityId) &&
+                Objects.equals(ticker, that.ticker) &&
                 Objects.equals(sortBy, that.sortBy);
     }
     
     @Override
     public int hashCode() {
-        return Objects.hash(offset, limit, executionStatus, tradeType, destination, securityId, sortBy);
+        return Objects.hash(offset, limit, executionStatus, tradeType, destination, ticker, sortBy);
     }
     
     @Override
@@ -134,7 +134,7 @@ public class ExecutionQueryParams {
                 ", executionStatus='" + executionStatus + '\'' +
                 ", tradeType='" + tradeType + '\'' +
                 ", destination='" + destination + '\'' +
-                ", securityId='" + securityId + '\'' +
+                ", ticker='" + ticker + '\'' +
                 ", sortBy='" + sortBy + '\'' +
                 '}';
     }

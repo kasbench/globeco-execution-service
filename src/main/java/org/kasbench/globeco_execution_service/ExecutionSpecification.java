@@ -5,6 +5,7 @@ import org.springframework.data.jpa.domain.Specification;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * JPA Specifications for dynamic Execution queries with performance optimizations.
@@ -13,9 +14,10 @@ public class ExecutionSpecification {
 
     /**
      * Create a specification based on query parameters with optimized predicates.
+     * This method requires a SecurityServiceClient to resolve ticker to securityId.
      */
     @SuppressWarnings("null")
-    public static Specification<Execution> withQueryParams(ExecutionQueryParams params) {
+    public static Specification<Execution> withQueryParams(ExecutionQueryParams params, SecurityServiceClient securityServiceClient) {
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
             
@@ -28,12 +30,23 @@ public class ExecutionSpecification {
                 return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
             }
             
-            // Security ID filter (highly selective)
-            if (params.getSecurityId() != null && !params.getSecurityId().trim().isEmpty()) {
-                predicates.add(criteriaBuilder.equal(
-                    criteriaBuilder.upper(root.get("securityId")), 
-                    params.getSecurityId().trim().toUpperCase()
-                ));
+            // Ticker filter (highly selective) - resolve to security ID
+            if (params.getTicker() != null && !params.getTicker().trim().isEmpty()) {
+                try {
+                    Optional<String> securityIdOpt = securityServiceClient.getSecurityIdByTicker(params.getTicker());
+                    if (securityIdOpt.isPresent()) {
+                        predicates.add(criteriaBuilder.equal(
+                            root.get("securityId"), 
+                            securityIdOpt.get()
+                        ));
+                    } else {
+                        // If ticker not found, add a predicate that will return no results
+                        predicates.add(criteriaBuilder.equal(root.get("id"), -1));
+                    }
+                } catch (Exception e) {
+                    // If there's an error resolving the ticker, add a predicate that will return no results
+                    predicates.add(criteriaBuilder.equal(root.get("id"), -1));
+                }
             }
             
             // Execution status filter (moderately selective, indexed)

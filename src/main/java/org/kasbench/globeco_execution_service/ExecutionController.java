@@ -36,13 +36,13 @@ public class ExecutionController {
      * @param executionStatus Filter by execution status
      * @param tradeType Filter by trade type
      * @param destination Filter by destination
-     * @param securityId Filter by security ID
+     * @param ticker Filter by ticker symbol
      * @param sortBy Comma-separated sort fields with optional minus prefix for descending (default: "id")
      * @return ExecutionPageDTO containing the filtered and paginated results
      */
     @Operation(
         summary = "Get executions with filtering and pagination",
-        description = "Retrieve executions with optional filtering by status, trade type, destination, or security ID. " +
+        description = "Retrieve executions with optional filtering by status, trade type, destination, or ticker symbol. " +
                      "Supports pagination and multi-field sorting. Returns enriched data with security ticker information."
     )
     @ApiResponses(value = {
@@ -63,13 +63,13 @@ public class ExecutionController {
             @RequestParam(value = "tradeType", required = false) String tradeType,
             @Parameter(description = "Filter by destination exchange", example = "NYSE")
             @RequestParam(value = "destination", required = false) String destination,
-            @Parameter(description = "Filter by security identifier", example = "SEC001")
-            @RequestParam(value = "securityId", required = false) String securityId,
+            @Parameter(description = "Filter by ticker symbol", example = "AAPL")
+            @RequestParam(value = "ticker", required = false) String ticker,
             @Parameter(description = "Comma-separated sort fields with minus prefix for descending", example = "receivedTimestamp,-id")
             @RequestParam(value = "sortBy", defaultValue = "id") String sortBy) {
         
         ExecutionQueryParams queryParams = new ExecutionQueryParams(
-            offset, limit, executionStatus, tradeType, destination, securityId, sortBy
+            offset, limit, executionStatus, tradeType, destination, ticker, sortBy
         );
         
         return executionService.findExecutions(queryParams);

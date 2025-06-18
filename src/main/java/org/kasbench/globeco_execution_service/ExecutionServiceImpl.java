@@ -74,8 +74,8 @@ public class ExecutionServiceImpl implements ExecutionService {
             sort
         );
         
-        // Create specification for filtering
-        Specification<Execution> spec = ExecutionSpecification.withQueryParams(queryParams);
+        // Create specification for filtering - pass SecurityServiceClient for ticker resolution
+        Specification<Execution> spec = ExecutionSpecification.withQueryParams(queryParams, securityServiceClient);
         
         // Execute query
         Page<Execution> page = executionRepository.findAll(spec, pageable);
