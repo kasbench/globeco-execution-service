@@ -191,6 +191,22 @@ The trade service integration is designed to be **non-blocking** and **resilient
 - Readiness: `/actuator/health/readiness`
 - Startup: `/actuator/health/startup`
 
+## Observability: OpenTelemetry Instrumentation
+
+This service is instrumented for metrics and distributed tracing using OpenTelemetry and Micrometer, following the standard GlobeCo Java OTEL guide.
+
+- **Metrics** are exported via OTLP to the OpenTelemetry Collector and forwarded to Prometheus. View metrics in Prometheus or Grafana dashboards.
+- **Traces** are exported via OTLP to the OpenTelemetry Collector and forwarded to Jaeger. View traces in the Jaeger UI (e.g., `http://jaeger.orchestration.svc.cluster.local:16686`).
+- **Actuator endpoints** for health, info, metrics, and Prometheus are enabled at `/actuator/*`.
+
+**Configuration summary:**
+- Metrics export URL: `http://otel-collector-collector.monitoring.svc.cluster.local:4318/v1/metrics`
+- Tracing export endpoint: `http://otel-collector-collector.monitoring.svc.cluster.local:4318/v1/traces`
+- Service name: `globeco-execution-service`
+- All required dependencies and properties are set in `build.gradle` and `application.properties`.
+
+For details, see `documentation/JAVA_OTEL_INSTRUMENTATION_GUIDE.md` and `documentation/OTEL_CONFIGURATION_GUIDE.md`.
+
 ## Testing
 - Unit and integration tests use Testcontainers for PostgreSQL and Kafka
 - Trade service integration tests use mocked HTTP responses

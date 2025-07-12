@@ -41,6 +41,9 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-testcontainers'
 	testImplementation 'org.wiremock:wiremock:3.3.1'
 
+    implementation 'io.micrometer:micrometer-registry-otlp'
+    implementation 'io.micrometer:micrometer-tracing-bridge-otel'
+    implementation 'io.opentelemetry:opentelemetry-exporter-otlp:1.38.0'
 
 
 	// implementation 'org.springframework.boot:spring-boot-starter-cache'
