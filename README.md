@@ -2,6 +2,9 @@
 
 The Execution Service in the GlobeCo suite for benchmarking Kubernetes autoscaling.
 
+
+**NOTE**: This microservice requires Kafka.  Deploy [globeco-execution-service-kafka](https://github.com/kasbench/globeco-execution-service-kafka) before deploying this service.
+
 ## Overview
 
 The Execution Service acts as a bridge between the trading service and the FIX engine. It receives trades synchronously from the trading service and sends them to the FIX engine as Kafka events. The service is designed for high scalability and observability, and is deployed on Kubernetes.
