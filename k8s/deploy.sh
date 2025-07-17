@@ -17,15 +17,15 @@ done
 
 echo "PostgreSQL StatefulSet is ready. Deploying Kafka."
 
-# Deploy Kafka StatefulSet and Service
-kubectl apply -f k8s/kafka.yaml
+# # Deploy Kafka StatefulSet and Service
+# kubectl apply -f k8s/kafka.yaml
 
-echo "Waiting for Kafka StatefulSet to be ready..."
-# Wait for the Kafka StatefulSet to have at least 1 ready replica
-until kubectl -n "$NAMESPACE" get statefulset "$KAFKA_STS" -o jsonpath='{.status.readyReplicas}' | grep -q '^1$'; do
-  echo "  ...still waiting for Kafka to be ready..."
-  sleep 5
-done
+# echo "Waiting for Kafka StatefulSet to be ready..."
+# # Wait for the Kafka StatefulSet to have at least 1 ready replica
+# until kubectl -n "$NAMESPACE" get statefulset "$KAFKA_STS" -o jsonpath='{.status.readyReplicas}' | grep -q '^1$'; do
+#   echo "  ...still waiting for Kafka to be ready..."
+#   sleep 5
+# done
 
 echo "Kafka StatefulSet is ready. Deploying application."
 
