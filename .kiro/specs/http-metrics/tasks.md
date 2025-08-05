@@ -12,7 +12,7 @@
   - Pre-register metrics with sample tags for immediate visibility
   - _Requirements: 1.1, 2.1, 3.1, 5.5_
 
-- [ ] 3. Implement core HttpMetricsFilter with essential functionality
+- [x] 3. Implement core HttpMetricsFilter with essential functionality
   - Create servlet filter implementing Filter interface with Jakarta EE imports
   - Implement doFilter method with timing, in-flight tracking, and metric recording
   - Add basic path normalization for ID replacement to prevent cardinality explosion
