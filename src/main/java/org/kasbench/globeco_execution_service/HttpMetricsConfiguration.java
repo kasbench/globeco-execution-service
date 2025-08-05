@@ -4,6 +4,7 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -76,5 +77,20 @@ public class HttpMetricsConfiguration {
         return Gauge.builder(HTTP_REQUESTS_IN_FLIGHT, httpRequestsInFlightCounter, AtomicInteger::get)
                 .description("Current number of HTTP requests being processed")
                 .register(meterRegistry);
+    }
+
+    /**
+     * Registers the HttpMetricsFilter with Spring Boot's filter registration mechanism.
+     * Sets high priority (order=1) and URL pattern "/*" to ensure comprehensive coverage
+     * of all HTTP traffic including API endpoints and actuator endpoints.
+     */
+    @Bean
+    public FilterRegistrationBean<HttpMetricsFilter> httpMetricsFilterRegistration(HttpMetricsFilter httpMetricsFilter) {
+        FilterRegistrationBean<HttpMetricsFilter> registration = new FilterRegistrationBean<>();
+        registration.setFilter(httpMetricsFilter);
+        registration.addUrlPatterns("/*");
+        registration.setOrder(1); // High priority to capture all requests
+        registration.setName("httpMetricsFilter");
+        return registration;
     }
 }
