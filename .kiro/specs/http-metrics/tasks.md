@@ -32,7 +32,7 @@
   - Record durations in milliseconds for OpenTelemetry Collector compatibility
   - _Requirements: 2.3, 2.5_
 
-- [ ] 6. Implement label extraction and normalization logic
+- [x] 6. Implement label extraction and normalization logic
   - Add method normalization to uppercase HTTP methods
   - Implement path extraction using Spring MVC handler mapping attributes
   - Add status code string conversion
