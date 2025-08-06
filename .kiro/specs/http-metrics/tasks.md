@@ -26,7 +26,7 @@
   - Ensure filter captures all HTTP traffic including API endpoints and actuator endpoints
   - _Requirements: 6.1, 6.4_
 
-- [ ] 5. Configure histogram buckets optimized for millisecond OTLP export
+- [x] 5. Configure histogram buckets optimized for millisecond OTLP export
   - Implement explicit Timer.builder() configuration in the filter
   - Use millisecond-based service level objectives: [5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000]
   - Record durations in milliseconds for OpenTelemetry Collector compatibility

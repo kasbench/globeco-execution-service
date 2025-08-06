@@ -3,6 +3,8 @@ package org.kasbench.globeco_execution_service;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
+import java.time.Duration;
+import java.util.concurrent.ConcurrentHashMap;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -32,15 +34,33 @@ public class HttpMetricsFilter implements Filter {
     private static final String HTTP_REQUESTS_TOTAL = "http_requests_total";
     private static final String HTTP_REQUEST_DURATION = "http_request_duration";
 
+    // Histogram buckets optimized for millisecond OTLP export
+    // Service level objectives: [5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000,
+    // 10000] milliseconds
+    private static final Duration[] HISTOGRAM_BUCKETS = {
+            Duration.ofMillis(5),
+            Duration.ofMillis(10),
+            Duration.ofMillis(25),
+            Duration.ofMillis(50),
+            Duration.ofMillis(100),
+            Duration.ofMillis(250),
+            Duration.ofMillis(500),
+            Duration.ofMillis(1000),
+            Duration.ofMillis(2500),
+            Duration.ofMillis(5000),
+            Duration.ofMillis(10000)
+    };
+
+    // Cache for Timer instances to avoid re-registration
+    private final ConcurrentHashMap<String, Timer> timerCache = new ConcurrentHashMap<>();
+
     // Patterns for path normalization to prevent cardinality explosion
     private static final Pattern NUMERIC_ID_PATTERN = Pattern.compile("/\\d+(?=/|$)");
-    private static final Pattern UUID_PATTERN = Pattern.compile("/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}(?=/|$)");
+    private static final Pattern UUID_PATTERN = Pattern
+            .compile("/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}(?=/|$)");
 
     private final MeterRegistry meterRegistry;
     private final AtomicInteger inFlightCounter;
-
-    // ThreadLocal for request-specific timing data
-    private static final ThreadLocal<RequestMetrics> REQUEST_METRICS = new ThreadLocal<>();
 
     public HttpMetricsFilter(MeterRegistry meterRegistry, AtomicInteger httpRequestsInFlightCounter) {
         this.meterRegistry = meterRegistry;
@@ -60,7 +80,7 @@ public class HttpMetricsFilter implements Filter {
         HttpServletResponse httpResponse = (HttpServletResponse) response;
 
         // Start timing and increment in-flight counter
-        long startTimeNanos = System.nanoTime();
+        long startTime = System.nanoTime();
         boolean inFlightIncremented = false;
 
         try {
@@ -68,29 +88,23 @@ public class HttpMetricsFilter implements Filter {
             inFlightCounter.incrementAndGet();
             inFlightIncremented = true;
 
-            // Store request metrics in ThreadLocal
-            REQUEST_METRICS.set(new RequestMetrics(startTimeNanos, true));
-
             // Process the request
             chain.doFilter(request, response);
 
         } catch (Exception e) {
             // Record metrics even when exceptions occur
-            recordMetrics(httpRequest, httpResponse, startTimeNanos);
+            recordMetrics(httpRequest, httpResponse, startTime);
             throw e;
         } finally {
             try {
                 // Always record metrics and decrement in-flight counter
-                recordMetrics(httpRequest, httpResponse, startTimeNanos);
+                recordMetrics(httpRequest, httpResponse, startTime);
 
                 if (inFlightIncremented) {
                     inFlightCounter.decrementAndGet();
                 }
             } catch (Exception e) {
                 logger.error("Failed to record HTTP metrics", e);
-            } finally {
-                // Always clean up ThreadLocal to prevent memory leaks
-                REQUEST_METRICS.remove();
             }
         }
     }
@@ -99,31 +113,41 @@ public class HttpMetricsFilter implements Filter {
      * Records HTTP request metrics including counter increment and duration timing.
      * Handles all exceptions to ensure service reliability.
      */
-    private void recordMetrics(HttpServletRequest request, HttpServletResponse response, long startTimeNanos) {
+    private void recordMetrics(HttpServletRequest request, HttpServletResponse response, long startTime) {
         try {
+            // Extract labels
             String method = normalizeMethod(request.getMethod());
             String path = normalizePath(request);
             String status = String.valueOf(response.getStatus());
 
-            // Record request counter
-            Counter.builder(HTTP_REQUESTS_TOTAL)
-                    .tag("method", method)
-                    .tag("path", path)
-                    .tag("status", status)
-                    .register(meterRegistry)
+            // Calculate duration in milliseconds (KEY INSIGHT: works better than
+            // nanoseconds)
+            long durationNanos = System.nanoTime() - startTime;
+            long durationMillis = durationNanos / 1_000_000L;
+
+            // Record counter metric
+            meterRegistry.counter(HTTP_REQUESTS_TOTAL,
+                    "method", method,
+                    "path", path,
+                    "status", status)
                     .increment();
 
-            // Record request duration
-            long durationNanos = System.nanoTime() - startTimeNanos;
-            Timer.builder(HTTP_REQUEST_DURATION)
+            // Record timer metric with cached Timer instances to avoid re-registration
+            String timerKey = HTTP_REQUEST_DURATION + ":" + method + ":" + path + ":" + status;
+            Timer timer = timerCache.computeIfAbsent(timerKey, key -> Timer.builder(HTTP_REQUEST_DURATION)
+                    .description("Duration of HTTP requests")
+                    .serviceLevelObjectives(HISTOGRAM_BUCKETS)
+                    .publishPercentileHistogram(false)
                     .tag("method", method)
                     .tag("path", path)
                     .tag("status", status)
-                    .register(meterRegistry)
-                    .record(durationNanos, TimeUnit.NANOSECONDS);
+                    .register(meterRegistry));
+
+            // Record duration in milliseconds
+            timer.record(durationMillis, TimeUnit.MILLISECONDS);
 
         } catch (Exception e) {
-            logger.error("Failed to record HTTP request metrics for {} {}", 
+            logger.error("Failed to record HTTP request metrics for {} {}",
                     request.getMethod(), request.getRequestURI(), e);
         }
     }
@@ -166,30 +190,10 @@ public class HttpMetricsFilter implements Filter {
             return path;
 
         } catch (Exception e) {
-            logger.warn("Failed to normalize path for request {}, using fallback", 
+            logger.warn("Failed to normalize path for request {}, using fallback",
                     request.getRequestURI(), e);
             return "/unknown";
         }
     }
 
-    /**
-     * Internal class for storing request-specific metrics data in ThreadLocal.
-     */
-    private static class RequestMetrics {
-        private final long startTimeNanos;
-        private final boolean inFlight;
-
-        public RequestMetrics(long startTimeNanos, boolean inFlight) {
-            this.startTimeNanos = startTimeNanos;
-            this.inFlight = inFlight;
-        }
-
-        public long getStartTimeNanos() {
-            return startTimeNanos;
-        }
-
-        public boolean isInFlight() {
-            return inFlight;
-        }
-    }
 }
