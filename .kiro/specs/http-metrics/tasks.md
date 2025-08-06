@@ -39,7 +39,7 @@
   - Include path parameter replacement for numeric IDs and UUIDs
   - _Requirements: 1.3, 1.4, 1.5, 6.5_
 
-- [ ] 7. Deploy and verify metrics endpoint functionality in Kubernetes
+- [x] 7. Deploy and verify metrics endpoint functionality in Kubernetes
   - Build and deploy service to Kubernetes environment
   - Verify /actuator/prometheus endpoint returns HTTP metrics
   - Test that metrics appear after making HTTP requests to service endpoints

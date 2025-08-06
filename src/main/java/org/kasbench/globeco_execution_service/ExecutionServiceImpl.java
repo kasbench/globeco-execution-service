@@ -16,8 +16,12 @@ import org.springframework.beans.factory.annotation.Value;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -64,8 +68,16 @@ public class ExecutionServiceImpl implements ExecutionService {
     @Override
     @Transactional(readOnly = true)
     public ExecutionPageDTO findExecutions(ExecutionQueryParams queryParams) {
+        long startTime = System.currentTimeMillis();
+        logger.info("Starting findExecutions query - offset: {}, limit: {}, filters: [status: {}, tradeType: {}, destination: {}, ticker: {}]", 
+            queryParams.getOffset(), queryParams.getLimit(), 
+            queryParams.getExecutionStatus(), queryParams.getTradeType(), 
+            queryParams.getDestination(), queryParams.getTicker());
+        
         // Parse sort parameters
         Sort sort = SortUtils.parseSortBy(queryParams.getSortBy());
+        long sortParseTime = System.currentTimeMillis();
+        logger.debug("Sort parsing completed in {}ms", sortParseTime - startTime);
         
         // Create pageable
         Pageable pageable = PageRequest.of(
@@ -74,16 +86,69 @@ public class ExecutionServiceImpl implements ExecutionService {
             sort
         );
         
-        // Create specification for filtering - pass SecurityServiceClient for ticker resolution
-        Specification<Execution> spec = ExecutionSpecification.withQueryParams(queryParams, securityServiceClient);
+        // Check if we can use the optimized query path (no ticker filter, simple sorting)
+        boolean canUseOptimizedPath = (queryParams.getTicker() == null || queryParams.getTicker().trim().isEmpty()) &&
+                                     "id".equals(queryParams.getSortBy());
         
-        // Execute query
-        Page<Execution> page = executionRepository.findAll(spec, pageable);
+        Page<Execution> page;
+        long queryStartTime = System.currentTimeMillis();
         
-        // Convert to DTOs with security information
-        List<ExecutionDTO> executionDTOs = page.getContent().stream()
-            .map(this::convertToDTO)
-            .collect(Collectors.toList());
+        if (canUseOptimizedPath) {
+            logger.debug("Using optimized query path");
+            
+            // Resolve security ID if ticker is provided (but we already checked it's null above)
+            String securityId = null;
+            
+            // Use optimized native query
+            List<Execution> executions = executionRepository.findExecutionsOptimized(
+                queryParams.getExecutionStatus(),
+                queryParams.getTradeType(), 
+                queryParams.getDestination(),
+                securityId,
+                queryParams.getOffset(),
+                queryParams.getLimit()
+            );
+            
+            // Get total count
+            long totalElements = executionRepository.countExecutionsOptimized(
+                queryParams.getExecutionStatus(),
+                queryParams.getTradeType(),
+                queryParams.getDestination(), 
+                securityId
+            );
+            
+            // Create a Page manually
+            int pageNumber = queryParams.getOffset() / queryParams.getLimit();
+            int totalPages = (int) Math.ceil((double) totalElements / queryParams.getLimit());
+            boolean hasNext = (pageNumber + 1) < totalPages;
+            boolean hasPrevious = pageNumber > 0;
+            
+            page = new org.springframework.data.domain.PageImpl<>(
+                executions, pageable, totalElements
+            );
+            
+        } else {
+            logger.debug("Using JPA Specification query path");
+            
+            // Create specification for filtering - pass SecurityServiceClient for ticker resolution
+            long specStartTime = System.currentTimeMillis();
+            Specification<Execution> spec = ExecutionSpecification.withQueryParams(queryParams, securityServiceClient);
+            long specEndTime = System.currentTimeMillis();
+            logger.debug("Specification creation completed in {}ms", specEndTime - specStartTime);
+            
+            // Execute query
+            page = executionRepository.findAll(spec, pageable);
+        }
+        
+        long queryEndTime = System.currentTimeMillis();
+        logger.info("Database query completed in {}ms - returned {} executions out of {} total (optimized: {})", 
+            queryEndTime - queryStartTime, page.getContent().size(), page.getTotalElements(), canUseOptimizedPath);
+        
+        // Convert to DTOs with security information using batch optimization
+        long dtoStartTime = System.currentTimeMillis();
+        List<ExecutionDTO> executionDTOs = convertToDTOsBatch(page.getContent());
+        long dtoEndTime = System.currentTimeMillis();
+        logger.info("DTO conversion with security enrichment completed in {}ms", dtoEndTime - dtoStartTime);
         
         // Create pagination metadata
         PaginationDTO pagination = new PaginationDTO(
@@ -95,6 +160,10 @@ public class ExecutionServiceImpl implements ExecutionService {
             page.hasNext(),
             page.hasPrevious()
         );
+        
+        long totalTime = System.currentTimeMillis() - startTime;
+        logger.info("Total findExecutions operation completed in {}ms - breakdown: query={}ms, dto_conversion={}ms", 
+            totalTime, queryEndTime - queryStartTime, dtoEndTime - dtoStartTime);
         
         return new ExecutionPageDTO(executionDTOs, pagination);
     }
@@ -137,6 +206,104 @@ public class ExecutionServiceImpl implements ExecutionService {
             execution.getAveragePrice(),
             execution.getVersion()
         );
+    }
+    
+    /**
+     * Optimized batch conversion to avoid N+1 queries to Security Service.
+     * Collects unique security IDs and makes batch calls instead of individual calls.
+     */
+    private List<ExecutionDTO> convertToDTOsBatch(List<Execution> executions) {
+        if (executions.isEmpty()) {
+            return new ArrayList<>();
+        }
+        
+        long startTime = System.currentTimeMillis();
+        
+        // Collect unique security IDs
+        Set<String> uniqueSecurityIds = executions.stream()
+            .map(Execution::getSecurityId)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+        
+        logger.debug("Found {} unique security IDs from {} executions", uniqueSecurityIds.size(), executions.size());
+        
+        // Batch fetch security information using optimized batch method
+        final Map<String, SecurityDTO> securityMap = fetchSecurityInformation(uniqueSecurityIds);
+        
+        // Convert executions to DTOs using the pre-fetched security data
+        List<ExecutionDTO> executionDTOs = executions.stream()
+            .map(execution -> {
+                SecurityDTO security = null;
+                if (execution.getSecurityId() != null) {
+                    security = securityMap.get(execution.getSecurityId());
+                }
+                
+                return new ExecutionDTO(
+                    execution.getId(),
+                    execution.getExecutionStatus(),
+                    execution.getTradeType(),
+                    execution.getDestination(),
+                    security,
+                    execution.getQuantity(),
+                    execution.getLimitPrice(),
+                    execution.getReceivedTimestamp(),
+                    execution.getSentTimestamp(),
+                    execution.getTradeServiceExecutionId(),
+                    execution.getQuantityFilled(),
+                    execution.getAveragePrice(),
+                    execution.getVersion()
+                );
+            })
+            .collect(Collectors.toList());
+        
+        long totalTime = System.currentTimeMillis() - startTime;
+        logger.debug("Batch DTO conversion completed in {}ms", totalTime);
+        
+        return executionDTOs;
+    }
+    
+    /**
+     * Helper method to fetch security information for a set of security IDs.
+     */
+    private Map<String, SecurityDTO> fetchSecurityInformation(Set<String> uniqueSecurityIds) {
+        if (uniqueSecurityIds.isEmpty()) {
+            return new HashMap<>();
+        }
+        
+        long securityFetchStart = System.currentTimeMillis();
+        
+        try {
+            Map<String, SecurityDTO> result = securityServiceClient.getSecuritiesByIds(uniqueSecurityIds);
+            long securityFetchEnd = System.currentTimeMillis();
+            logger.info("Security service batch fetch completed in {}ms for {} unique securities", 
+                securityFetchEnd - securityFetchStart, uniqueSecurityIds.size());
+            return result;
+            
+        } catch (Exception e) {
+            logger.error("Batch security fetch failed, falling back to individual calls: {}", e.getMessage());
+            
+            // Fallback to individual calls if batch fails
+            Map<String, SecurityDTO> fallbackMap = new HashMap<>();
+            for (String securityId : uniqueSecurityIds) {
+                try {
+                    Optional<SecurityDTO> securityOpt = securityServiceClient.getSecurityById(securityId);
+                    if (securityOpt.isPresent()) {
+                        fallbackMap.put(securityId, securityOpt.get());
+                    } else {
+                        fallbackMap.put(securityId, new SecurityDTO(securityId, null));
+                    }
+                } catch (Exception individualError) {
+                    logger.warn("Failed to get security info for securityId {}: {}", securityId, individualError.getMessage());
+                    fallbackMap.put(securityId, new SecurityDTO(securityId, null));
+                }
+            }
+            
+            long securityFetchEnd = System.currentTimeMillis();
+            logger.info("Security service fallback fetch completed in {}ms for {} unique securities", 
+                securityFetchEnd - securityFetchStart, uniqueSecurityIds.size());
+            
+            return fallbackMap;
+        }
     }
 
     @Override

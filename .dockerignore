@@ -1,0 +1,78 @@
+# Build artifacts
+build/
+target/
+*.jar
+*.war
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+*.md
+docs/
+documentation/
+
+# Test files
+src/test/
+
+# Gradle wrapper (we copy it explicitly)
+.gradle/
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Docker files
+Dockerfile*
+docker-compose*
+
+# Kubernetes files
+k8s/
+*.yaml
+*.yml
+
+# Scripts (except gradlew)
+*.sh
+!gradlew
+
+# Environment files
+.env*
+
+# Cache directories
+node_modules/
+.npm/
+.cache/
+
+# IDE settings
+.settings/
+.project
+.classpath
+
+# Backup files
+*~
+*.bak
+*.swp
+*.swo
+
+# Coverage reports
+coverage/
+.nyc_output/
+
+# Performance test results
+.kiro/

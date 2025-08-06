@@ -9,19 +9,27 @@ import org.springframework.web.client.RestTemplate;
 import java.time.Duration;
 
 /**
- * Configuration for Security Service integration.
+ * Configuration for RestTemplate with timeouts and logging.
  */
 @Configuration
-public class SecurityServiceConfig {
+public class RestTemplateConfig {
     
+    /**
+     * Configure RestTemplate for Security Service with timeouts and logging.
+     */
     @Bean("securityServiceRestTemplate")
     public RestTemplate securityServiceRestTemplate(
             @Value("${security-service.timeout.connect:5s}") Duration connectTimeout,
             @Value("${security-service.timeout.read:10s}") Duration readTimeout) {
         
-        return new RestTemplateBuilder()
+        RestTemplate restTemplate = new RestTemplateBuilder()
                 .setConnectTimeout(connectTimeout)
                 .setReadTimeout(readTimeout)
                 .build();
+        
+        // Add error handling and logging interceptors
+        restTemplate.getInterceptors().add(new RestTemplateLoggingInterceptor());
+        
+        return restTemplate;
     }
-} 
+}

@@ -13,9 +13,13 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Implementation of SecurityServiceClient using RestTemplate with Caffeine caching.
@@ -55,7 +59,7 @@ public class SecurityServiceClientImpl implements SecurityServiceClient {
         
         try {
             String url = UriComponentsBuilder
-                    .fromHttpUrl(securityServiceBaseUrl + "/api/v2/securities")
+                    .fromUriString(securityServiceBaseUrl + "/api/v2/securities")
                     .queryParam("securityId", securityId)
                     .toUriString();
             
@@ -199,7 +203,7 @@ public class SecurityServiceClientImpl implements SecurityServiceClient {
         // Fetch from Security Service using ticker parameter
         try {
             String url = UriComponentsBuilder
-                    .fromHttpUrl(securityServiceBaseUrl + "/api/v2/securities")
+                    .fromUriString(securityServiceBaseUrl + "/api/v2/securities")
                     .queryParam("ticker", ticker.trim())
                     .toUriString();
             
@@ -249,5 +253,136 @@ public class SecurityServiceClientImpl implements SecurityServiceClient {
                 stats.hitRate() * 100,
                 stats.missCount(),
                 stats.evictionCount());
+    }
+    
+    @Override
+    public Map<String, SecurityDTO> getSecuritiesByIds(Set<String> securityIds) {
+        if (securityIds == null || securityIds.isEmpty()) {
+            return new HashMap<>();
+        }
+        
+        long startTime = System.currentTimeMillis();
+        Map<String, SecurityDTO> result = new HashMap<>();
+        Set<String> uncachedIds = new HashSet<>();
+        
+        // Check cache first for all IDs
+        for (String securityId : securityIds) {
+            String cacheKey = "security:" + securityId;
+            String cachedTicker = tickerCache.getIfPresent(cacheKey);
+            if (cachedTicker != null) {
+                result.put(securityId, new SecurityDTO(securityId, cachedTicker));
+            } else {
+                uncachedIds.add(securityId);
+            }
+        }
+        
+        logger.debug("Cache check completed: {} hits, {} misses for {} total security IDs", 
+            result.size(), uncachedIds.size(), securityIds.size());
+        
+        // Fetch uncached securities in batches
+        if (!uncachedIds.isEmpty()) {
+            long fetchStartTime = System.currentTimeMillis();
+            
+            // Process in batches of 50 to avoid URL length limits
+            List<String> uncachedList = new ArrayList<>(uncachedIds);
+            for (int i = 0; i < uncachedList.size(); i += 50) {
+                int endIndex = Math.min(i + 50, uncachedList.size());
+                List<String> batch = uncachedList.subList(i, endIndex);
+                
+                try {
+                    Map<String, SecurityDTO> batchResult = fetchSecurityBatch(batch);
+                    result.putAll(batchResult);
+                    
+                    // Cache the results
+                    for (Map.Entry<String, SecurityDTO> entry : batchResult.entrySet()) {
+                        String cacheKey = "security:" + entry.getKey();
+                        if (entry.getValue().getTicker() != null) {
+                            tickerCache.put(cacheKey, entry.getValue().getTicker());
+                        }
+                    }
+                    
+                } catch (Exception e) {
+                    logger.error("Error fetching security batch {}-{}: {}", i, endIndex - 1, e.getMessage(), e);
+                    
+                    // Fallback to individual calls for this batch
+                    for (String securityId : batch) {
+                        try {
+                            Optional<SecurityDTO> individual = getSecurityById(securityId);
+                            if (individual.isPresent()) {
+                                result.put(securityId, individual.get());
+                            } else {
+                                result.put(securityId, new SecurityDTO(securityId, null));
+                            }
+                        } catch (Exception individualError) {
+                            logger.warn("Failed individual fallback for security {}: {}", securityId, individualError.getMessage());
+                            result.put(securityId, new SecurityDTO(securityId, null));
+                        }
+                    }
+                }
+            }
+            
+            long fetchEndTime = System.currentTimeMillis();
+            logger.debug("Batch security fetch completed in {}ms for {} uncached securities", 
+                fetchEndTime - fetchStartTime, uncachedIds.size());
+        }
+        
+        // Ensure all requested IDs have entries (with null ticker if not found)
+        for (String securityId : securityIds) {
+            if (!result.containsKey(securityId)) {
+                result.put(securityId, new SecurityDTO(securityId, null));
+            }
+        }
+        
+        long totalTime = System.currentTimeMillis() - startTime;
+        logger.debug("Total batch security lookup completed in {}ms - {} total, {} from cache, {} fetched", 
+            totalTime, securityIds.size(), securityIds.size() - uncachedIds.size(), uncachedIds.size());
+        
+        return result;
+    }
+    
+    /**
+     * Fetch a batch of securities from the Security Service.
+     */
+    private Map<String, SecurityDTO> fetchSecurityBatch(List<String> securityIds) {
+        Map<String, SecurityDTO> result = new HashMap<>();
+        
+        try {
+            // Build URL with multiple securityId parameters
+            UriComponentsBuilder builder = UriComponentsBuilder
+                    .fromUriString(securityServiceBaseUrl + "/api/v2/securities");
+            
+            for (String securityId : securityIds) {
+                builder.queryParam("securityId", securityId);
+            }
+            
+            String url = builder.toUriString();
+            logger.debug("Batch calling Security Service: {} securities", securityIds.size());
+            
+            ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
+            
+            if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
+                Map<String, Object> responseBody = response.getBody();
+                List<Map<String, Object>> securities = (List<Map<String, Object>>) responseBody.get("securities");
+                
+                if (securities != null) {
+                    for (Map<String, Object> security : securities) {
+                        String securityId = (String) security.get("securityId");
+                        String ticker = (String) security.get("ticker");
+                        
+                        if (securityId != null) {
+                            result.put(securityId, new SecurityDTO(securityId, ticker));
+                        }
+                    }
+                }
+            }
+            
+            logger.debug("Batch security fetch returned {} results for {} requested", result.size(), securityIds.size());
+            
+        } catch (Exception e) {
+            logger.error("Error in batch security fetch: {}", e.getMessage(), e);
+            throw e;
+        }
+        
+        return result;
     }
 } 

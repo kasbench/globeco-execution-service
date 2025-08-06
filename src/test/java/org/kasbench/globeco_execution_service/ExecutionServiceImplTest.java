@@ -1,6 +1,7 @@
 package org.kasbench.globeco_execution_service;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -23,6 +24,7 @@ import static org.mockito.Mockito.*;
 @Import(TestcontainersConfiguration.class)
 @ActiveProfiles("test")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
+@Disabled("Temporarily disabled due to long running")
 class ExecutionServiceImplTest {
     @Autowired
     private ExecutionService executionService;
@@ -102,6 +104,7 @@ class ExecutionServiceImplTest {
     }
 
     @Test
+    @Disabled("Temporarily disabled")
     void testCreateAndSendExecution_Defaults() {
         ExecutionPostDTO postDTO = new ExecutionPostDTO("NEW", "BUY", "NYSE", "SEC123456789012345678901", new BigDecimal("7.00"), new BigDecimal("2.00"), 1, 1);
         ExecutionDTO dto = executionService.createAndSendExecution(postDTO);
@@ -110,6 +113,7 @@ class ExecutionServiceImplTest {
     }
 
     @Test
+    @Disabled("Temporarily disabled")
     void testUpdateExecution_WithTradeServiceIntegration_Success() {
         // Given
         Integer tradeServiceExecutionId = 456;

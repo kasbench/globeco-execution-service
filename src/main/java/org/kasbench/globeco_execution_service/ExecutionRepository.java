@@ -74,4 +74,51 @@ public interface ExecutionRepository extends JpaRepository<Execution, Integer>, 
     @Query(value = "SELECT * FROM execution WHERE trade_type = :tradeType ORDER BY received_timestamp DESC LIMIT :limit", 
            nativeQuery = true)
     List<Execution> findRecentByTradeType(@Param("tradeType") String tradeType, @Param("limit") int limit);
+    
+    /**
+     * Optimized query for common filtering patterns with pagination.
+     * This bypasses JPA Specification overhead for the most common queries.
+     * 
+     * @param executionStatus Filter by execution status (optional)
+     * @param tradeType Filter by trade type (optional)  
+     * @param destination Filter by destination (optional)
+     * @param securityId Filter by security ID (optional)
+     * @param offset Number of records to skip
+     * @param limit Maximum records to return
+     * @return List of executions matching the criteria
+     */
+    @Query(value = """
+        SELECT * FROM execution e 
+        WHERE (:executionStatus IS NULL OR e.execution_status = :executionStatus)
+          AND (:tradeType IS NULL OR e.trade_type = :tradeType)
+          AND (:destination IS NULL OR e.destination = :destination)
+          AND (:securityId IS NULL OR e.security_id = :securityId)
+        ORDER BY e.received_timestamp DESC, e.id DESC
+        OFFSET :offset LIMIT :limit
+        """, nativeQuery = true)
+    List<Execution> findExecutionsOptimized(
+        @Param("executionStatus") String executionStatus,
+        @Param("tradeType") String tradeType,
+        @Param("destination") String destination,
+        @Param("securityId") String securityId,
+        @Param("offset") int offset,
+        @Param("limit") int limit
+    );
+    
+    /**
+     * Count query for the optimized execution finder.
+     */
+    @Query(value = """
+        SELECT COUNT(*) FROM execution e 
+        WHERE (:executionStatus IS NULL OR e.execution_status = :executionStatus)
+          AND (:tradeType IS NULL OR e.trade_type = :tradeType)
+          AND (:destination IS NULL OR e.destination = :destination)
+          AND (:securityId IS NULL OR e.security_id = :securityId)
+        """, nativeQuery = true)
+    long countExecutionsOptimized(
+        @Param("executionStatus") String executionStatus,
+        @Param("tradeType") String tradeType,
+        @Param("destination") String destination,
+        @Param("securityId") String securityId
+    );
 } 

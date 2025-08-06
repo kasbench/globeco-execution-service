@@ -1,0 +1,21 @@
+{
+  "request": {
+    "method": "GET",
+    "urlPathPattern": "/api/v2/securities"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "securities": [
+        {
+          "securityId": "{{request.query.securityId}}",
+          "ticker": "{{#eq request.query.securityId 'SEC001'}}AAPL{{/eq}}{{#eq request.query.securityId 'SEC002'}}GOOGL{{/eq}}{{#eq request.query.securityId 'SEC003'}}MSFT{{/eq}}{{#eq request.query.securityId 'SEC004'}}TSLA{{/eq}}{{#eq request.query.securityId 'SEC005'}}AMZN{{/eq}}"
+        }
+      ]
+    },
+    "transformers": ["response-template"]
+  }
+}

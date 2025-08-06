@@ -19,6 +19,7 @@ public class ExecutionSpecification {
     @SuppressWarnings("null")
     public static Specification<Execution> withQueryParams(ExecutionQueryParams params, SecurityServiceClient securityServiceClient) {
         return (root, query, criteriaBuilder) -> {
+            long startTime = System.currentTimeMillis();
             List<Predicate> predicates = new ArrayList<>();
             
             // Optimize by adding most selective filters first
@@ -32,18 +33,32 @@ public class ExecutionSpecification {
             
             // Ticker filter (highly selective) - resolve to security ID
             if (params.getTicker() != null && !params.getTicker().trim().isEmpty()) {
+                long tickerResolveStart = System.currentTimeMillis();
                 try {
                     Optional<String> securityIdOpt = securityServiceClient.getSecurityIdByTicker(params.getTicker());
+                    long tickerResolveEnd = System.currentTimeMillis();
+                    
                     if (securityIdOpt.isPresent()) {
                         predicates.add(criteriaBuilder.equal(
                             root.get("securityId"), 
                             securityIdOpt.get()
                         ));
+                        // Log ticker resolution time if it's slow
+                        if (tickerResolveEnd - tickerResolveStart > 100) {
+                            org.slf4j.LoggerFactory.getLogger(ExecutionSpecification.class)
+                                .warn("Slow ticker resolution for '{}': {}ms", params.getTicker(), tickerResolveEnd - tickerResolveStart);
+                        }
                     } else {
                         // If ticker not found, add a predicate that will return no results
                         predicates.add(criteriaBuilder.equal(root.get("id"), -1));
+                        org.slf4j.LoggerFactory.getLogger(ExecutionSpecification.class)
+                            .debug("Ticker '{}' not found, returning empty result set", params.getTicker());
                     }
                 } catch (Exception e) {
+                    long tickerResolveEnd = System.currentTimeMillis();
+                    org.slf4j.LoggerFactory.getLogger(ExecutionSpecification.class)
+                        .error("Error resolving ticker '{}' after {}ms: {}", params.getTicker(), 
+                               tickerResolveEnd - tickerResolveStart, e.getMessage());
                     // If there's an error resolving the ticker, add a predicate that will return no results
                     predicates.add(criteriaBuilder.equal(root.get("id"), -1));
                 }
@@ -51,18 +66,34 @@ public class ExecutionSpecification {
             
             // Execution status filter (moderately selective, indexed)
             if (params.getExecutionStatus() != null && !params.getExecutionStatus().trim().isEmpty()) {
-                predicates.add(criteriaBuilder.like(
-                    criteriaBuilder.upper(root.get("executionStatus")), 
-                    "%" + params.getExecutionStatus().trim().toUpperCase() + "%"
-                ));
+                // Use exact match instead of LIKE for better performance when possible
+                String status = params.getExecutionStatus().trim().toUpperCase();
+                if (status.equals("NEW") || status.equals("PART") || status.equals("FULL") || 
+                    status.equals("CANCELLED") || status.equals("REJECTED")) {
+                    // Exact match for known status values
+                    predicates.add(criteriaBuilder.equal(root.get("executionStatus"), status));
+                } else {
+                    // Fallback to LIKE for partial matches
+                    predicates.add(criteriaBuilder.like(
+                        criteriaBuilder.upper(root.get("executionStatus")), 
+                        "%" + status + "%"
+                    ));
+                }
             }
             
             // Trade type filter (moderately selective, indexed)
             if (params.getTradeType() != null && !params.getTradeType().trim().isEmpty()) {
-                predicates.add(criteriaBuilder.like(
-                    criteriaBuilder.upper(root.get("tradeType")), 
-                    "%" + params.getTradeType().trim().toUpperCase() + "%"
-                ));
+                String tradeType = params.getTradeType().trim().toUpperCase();
+                if (tradeType.equals("BUY") || tradeType.equals("SELL")) {
+                    // Exact match for known trade types
+                    predicates.add(criteriaBuilder.equal(root.get("tradeType"), tradeType));
+                } else {
+                    // Fallback to LIKE for partial matches
+                    predicates.add(criteriaBuilder.like(
+                        criteriaBuilder.upper(root.get("tradeType")), 
+                        "%" + tradeType + "%"
+                    ));
+                }
             }
             
             // Destination filter (less selective, but indexed)
@@ -77,6 +108,13 @@ public class ExecutionSpecification {
             if (query.getResultType() == Long.class) {
                 // This is a count query - no need for complex operations
                 query.distinct(true);
+            }
+            
+            long endTime = System.currentTimeMillis();
+            if (endTime - startTime > 50) {
+                org.slf4j.LoggerFactory.getLogger(ExecutionSpecification.class)
+                    .warn("Slow specification building: {}ms for query with {} predicates", 
+                           endTime - startTime, predicates.size());
             }
             
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
