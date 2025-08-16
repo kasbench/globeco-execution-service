@@ -1,0 +1,107 @@
+package org.kasbench.globeco_execution_service;
+
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
+import org.springframework.boot.web.context.WebServerInitializedEvent;
+import org.springframework.boot.web.embedded.tomcat.TomcatWebServer;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.event.EventListener;
+
+import java.lang.reflect.Method;
+import java.util.concurrent.ThreadPoolExecutor;
+
+@Configuration
+@ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
+public class TomcatThreadMetricsConfig {
+
+    private static final Logger logger = LoggerFactory.getLogger(TomcatThreadMetricsConfig.class);
+    private final MeterRegistry meterRegistry;
+
+    public TomcatThreadMetricsConfig(MeterRegistry meterRegistry) {
+        this.meterRegistry = meterRegistry;
+        logger.info("TomcatThreadMetricsConfig initialized with MeterRegistry: {}", meterRegistry.getClass().getSimpleName());
+    }
+
+    @EventListener
+    public void onWebServerInitialized(WebServerInitializedEvent event) {
+        logger.info("WebServerInitializedEvent received. Server type: {}", event.getWebServer().getClass().getSimpleName());
+        
+        if (event.getWebServer() instanceof TomcatWebServer) {
+            TomcatWebServer tomcatWebServer = (TomcatWebServer) event.getWebServer();
+            logger.info("Registering Tomcat thread metrics...");
+            
+            try {
+                // Register custom thread pool metrics
+                registerCustomThreadMetrics(tomcatWebServer);
+                
+            } catch (Exception e) {
+                logger.error("Failed to register Tomcat metrics", e);
+            }
+        } else {
+            logger.warn("Web server is not Tomcat: {}", event.getWebServer().getClass().getSimpleName());
+        }
+    }
+    
+    private void registerCustomThreadMetrics(TomcatWebServer tomcatWebServer) {
+        try {
+            var tomcat = tomcatWebServer.getTomcat();
+            var server = tomcat.getServer();
+            var services = server.findServices();
+            
+            logger.info("Found {} Tomcat services", services.length);
+            
+            for (var service : services) {
+                var connectors = service.findConnectors();
+                logger.info("Found {} connectors in service", connectors.length);
+                
+                for (var connector : connectors) {
+                    var protocolHandler = connector.getProtocolHandler();
+                    logger.info("Processing connector with protocol handler: {}", 
+                               protocolHandler.getClass().getSimpleName());
+                    
+                    try {
+                        // Use reflection to get the executor
+                        Method getExecutor = protocolHandler.getClass().getMethod("getExecutor");
+                        Object executor = getExecutor.invoke(protocolHandler);
+                        
+                        if (executor instanceof ThreadPoolExecutor) {
+                            ThreadPoolExecutor threadPool = (ThreadPoolExecutor) executor;
+                            String connectorName = connector.getScheme() + "-" + connector.getPort();
+                            
+                            logger.info("Registering thread metrics for connector: {}", connectorName);
+                            
+                            // Register custom thread pool metrics with tags
+                            meterRegistry.gauge("tomcat.threads.busy", 
+                                Tags.of("connector", connectorName), 
+                                threadPool, tpe -> (double) tpe.getActiveCount());
+                                
+                            meterRegistry.gauge("tomcat.threads.current", 
+                                Tags.of("connector", connectorName),
+                                threadPool, tpe -> (double) tpe.getPoolSize());
+                                
+                            meterRegistry.gauge("tomcat.threads.config.max", 
+                                Tags.of("connector", connectorName),
+                                threadPool, tpe -> (double) tpe.getMaximumPoolSize());
+                                
+                            meterRegistry.gauge("tomcat.threads.queue.size", 
+                                Tags.of("connector", connectorName),
+                                threadPool, tpe -> (double) tpe.getQueue().size());
+                                
+                            logger.info("Successfully registered thread metrics for connector: {}", connectorName);
+                        } else {
+                            logger.warn("Executor is not ThreadPoolExecutor: {}", 
+                                       executor != null ? executor.getClass().getSimpleName() : "null");
+                        }
+                    } catch (Exception e) {
+                        logger.error("Failed to register thread metrics for connector", e);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            logger.error("Failed to register custom thread metrics", e);
+        }
+    }
+}
