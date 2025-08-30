@@ -69,10 +69,28 @@ public class ExecutionServiceImpl implements ExecutionService {
     @Transactional(readOnly = true)
     public ExecutionPageDTO findExecutions(ExecutionQueryParams queryParams) {
         long startTime = System.currentTimeMillis();
-        logger.info("Starting findExecutions query - offset: {}, limit: {}, filters: [status: {}, tradeType: {}, destination: {}, ticker: {}]", 
-            queryParams.getOffset(), queryParams.getLimit(), 
+        logger.info("Starting findExecutions query - offset: {}, limit: {}, filters: [id: {}, status: {}, tradeType: {}, destination: {}, ticker: {}]", 
+            queryParams.getId(), queryParams.getOffset(), queryParams.getLimit(), 
             queryParams.getExecutionStatus(), queryParams.getTradeType(), 
             queryParams.getDestination(), queryParams.getTicker());
+        
+        // Handle single ID lookup first
+        if (queryParams.getId() != null) {
+            logger.debug("Using direct ID lookup for execution: {}", queryParams.getId());
+            Optional<Execution> execution = executionRepository.findById(queryParams.getId());
+            
+            if (execution.isEmpty()) {
+                // Return empty page
+                PaginationDTO emptyPagination = new PaginationDTO(0, 1, 0L, 0, 0, false, false);
+                return new ExecutionPageDTO(List.of(), emptyPagination);
+            }
+            
+            // Convert to DTO with security information
+            List<ExecutionDTO> executionDTOs = convertToDTOsBatch(List.of(execution.get()));
+            
+            PaginationDTO pagination = new PaginationDTO(0, 1, 1L, 1, 0, false, false);
+            return new ExecutionPageDTO(executionDTOs, pagination);
+        }
         
         // Parse sort parameters
         Sort sort = SortUtils.parseSortBy(queryParams.getSortBy());
