@@ -63,6 +63,10 @@ spec:
       spec:
         accessModes: [ "ReadWriteOnce" ]
         storageClassName: local-storage
+        selector:
+          matchLabels:
+            app: execution-service-postgres
+            type: local
         resources:
           requests:
             storage: 10Gi
