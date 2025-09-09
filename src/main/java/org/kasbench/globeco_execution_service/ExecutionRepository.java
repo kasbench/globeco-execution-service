@@ -10,7 +10,7 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 @Repository
-public interface ExecutionRepository extends JpaRepository<Execution, Integer>, JpaSpecificationExecutor<Execution> {
+public interface ExecutionRepository extends JpaRepository<Execution, Integer>, JpaSpecificationExecutor<Execution>, ExecutionRepositoryCustom {
     
     /**
      * Optimized query to find executions by status using index.
@@ -121,4 +121,14 @@ public interface ExecutionRepository extends JpaRepository<Execution, Integer>, 
         @Param("destination") String destination,
         @Param("securityId") String securityId
     );
+    
+    /**
+     * Bulk update sent timestamps for executions.
+     * @param executionIds List of execution IDs to update
+     * @param sentTimestamp The timestamp to set
+     * @return Number of updated records
+     */
+    @Modifying
+    @Query("UPDATE Execution e SET e.sentTimestamp = :sentTimestamp, e.version = e.version + 1 WHERE e.id IN :executionIds")
+    int bulkUpdateSentTimestamp(@Param("executionIds") List<Integer> executionIds, @Param("sentTimestamp") OffsetDateTime sentTimestamp);
 } 
