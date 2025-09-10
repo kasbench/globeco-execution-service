@@ -222,6 +222,30 @@ public class BatchExecutionProperties {
         @Max(value = 7200000, message = "Max lifetime cannot exceed 2 hours")
         private long maxLifetime = 1800000;
 
+        /**
+         * Maximum number of retry attempts for transient database errors.
+         * Default: 3
+         */
+        @Min(value = 0, message = "Max retries cannot be negative")
+        @Max(value = 10, message = "Max retries cannot exceed 10")
+        private int maxRetries = 3;
+
+        /**
+         * Initial delay in milliseconds before first retry attempt for database operations.
+         * Default: 500ms
+         */
+        @Min(value = 100, message = "Retry delay must be at least 100ms")
+        @Max(value = 10000, message = "Retry delay cannot exceed 10 seconds")
+        private long retryDelayMs = 500;
+
+        /**
+         * Maximum delay in milliseconds between database retry attempts.
+         * Default: 5000ms (5 seconds)
+         */
+        @Min(value = 1000, message = "Max retry delay must be at least 1 second")
+        @Max(value = 60000, message = "Max retry delay cannot exceed 1 minute")
+        private long maxRetryDelayMs = 5000;
+
         // Getters and setters
         public int getMaxPoolSize() {
             return maxPoolSize;
@@ -245,6 +269,30 @@ public class BatchExecutionProperties {
 
         public void setMaxLifetime(long maxLifetime) {
             this.maxLifetime = maxLifetime;
+        }
+
+        public int getMaxRetries() {
+            return maxRetries;
+        }
+
+        public void setMaxRetries(int maxRetries) {
+            this.maxRetries = maxRetries;
+        }
+
+        public long getRetryDelayMs() {
+            return retryDelayMs;
+        }
+
+        public void setRetryDelayMs(long retryDelayMs) {
+            this.retryDelayMs = retryDelayMs;
+        }
+
+        public long getMaxRetryDelayMs() {
+            return maxRetryDelayMs;
+        }
+
+        public void setMaxRetryDelayMs(long maxRetryDelayMs) {
+            this.maxRetryDelayMs = maxRetryDelayMs;
         }
     }
 

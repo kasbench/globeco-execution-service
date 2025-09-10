@@ -311,6 +311,53 @@ public class BatchProcessingMetrics {
         logger.warn("Kafka circuit breaker opened: {}", reason);
     }
     
+    // Error Recovery Metrics Methods
+    
+    /**
+     * Records a successful bulk insert operation.
+     * @param recordCount Number of records inserted
+     */
+    public void recordBulkInsertSuccess(int recordCount) {
+        databaseOperationCounter.increment();
+        bulkOperationSizeDistribution.record(recordCount);
+        logger.debug("Recorded successful bulk insert: {} records", recordCount);
+    }
+    
+    /**
+     * Records a failed bulk insert operation.
+     * @param recordCount Number of records that failed to insert
+     * @param errorType Type of error that occurred
+     */
+    public void recordBulkInsertFailure(int recordCount, String errorType) {
+        databaseErrorCounter.increment();
+        logger.debug("Recorded failed bulk insert: {} records, error: {}", recordCount, errorType);
+    }
+    
+    /**
+     * Records a failed individual insert operation during fallback processing.
+     * @param errorType Type of error that occurred
+     */
+    public void recordIndividualInsertFailure(String errorType) {
+        databaseErrorCounter.increment();
+        logger.debug("Recorded failed individual insert, error: {}", errorType);
+    }
+    
+    /**
+     * Records a Kafka recovery attempt.
+     */
+    public void recordKafkaRecoveryAttempt() {
+        kafkaRetryCounter.increment();
+        logger.debug("Recorded Kafka recovery attempt");
+    }
+    
+    /**
+     * Records a failed Kafka recovery attempt.
+     */
+    public void recordKafkaRecoveryFailure() {
+        kafkaPublishFailureCounter.increment();
+        logger.debug("Recorded failed Kafka recovery attempt");
+    }
+    
     // Performance Calculation Methods
     
     /**

@@ -97,68 +97,68 @@ public class BulkExecutionProcessor {
     }
 
     /**
-     * Validate a single execution request.
+     * Validate a single execution request with detailed error reporting.
      */
     private void validateSingleExecution(ExecutionPostDTO request, int index) throws ValidationException {
         if (request == null) {
-            throw new ValidationException("Execution request cannot be null");
+            throw new ValidationException("Execution request cannot be null", "NULL_REQUEST", null);
         }
 
-        // Validate required fields
+        // Validate required fields with specific error codes
         if (request.getExecutionStatus() == null || request.getExecutionStatus().trim().isEmpty()) {
-            throw new ValidationException("Execution status is required");
+            throw new ValidationException("Execution status is required", "MISSING_REQUIRED_FIELD", "executionStatus");
         }
 
         if (request.getTradeType() == null || request.getTradeType().trim().isEmpty()) {
-            throw new ValidationException("Trade type is required");
+            throw new ValidationException("Trade type is required", "MISSING_REQUIRED_FIELD", "tradeType");
         }
 
         if (request.getDestination() == null || request.getDestination().trim().isEmpty()) {
-            throw new ValidationException("Destination is required");
+            throw new ValidationException("Destination is required", "MISSING_REQUIRED_FIELD", "destination");
         }
 
         if (request.getSecurityId() == null || request.getSecurityId().trim().isEmpty()) {
-            throw new ValidationException("Security ID is required");
+            throw new ValidationException("Security ID is required", "MISSING_REQUIRED_FIELD", "securityId");
         }
 
         if (request.getQuantity() == null) {
-            throw new ValidationException("Quantity is required");
+            throw new ValidationException("Quantity is required", "MISSING_REQUIRED_FIELD", "quantity");
         }
 
-        // Validate field lengths and formats
+        // Validate field lengths and formats with specific error codes
         if (request.getExecutionStatus().length() > 20) {
-            throw new ValidationException("Execution status cannot exceed 20 characters");
+            throw new ValidationException("Execution status cannot exceed 20 characters", "FIELD_TOO_LONG", "executionStatus");
         }
 
         if (request.getTradeType().length() > 10) {
-            throw new ValidationException("Trade type cannot exceed 10 characters");
+            throw new ValidationException("Trade type cannot exceed 10 characters", "FIELD_TOO_LONG", "tradeType");
         }
 
         if (request.getDestination().length() > 20) {
-            throw new ValidationException("Destination cannot exceed 20 characters");
+            throw new ValidationException("Destination cannot exceed 20 characters", "FIELD_TOO_LONG", "destination");
         }
 
         if (request.getSecurityId().length() > 24) {
-            throw new ValidationException("Security ID cannot exceed 24 characters");
+            throw new ValidationException("Security ID cannot exceed 24 characters", "FIELD_TOO_LONG", "securityId");
         }
 
-        // Validate business rules
+        // Validate business rules with specific error codes
         if (request.getQuantity().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new ValidationException("Quantity must be greater than zero");
+            throw new ValidationException("Quantity must be greater than zero", "INVALID_VALUE", "quantity");
         }
 
         if (request.getLimitPrice() != null && request.getLimitPrice().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new ValidationException("Limit price must be greater than zero when specified");
+            throw new ValidationException("Limit price must be greater than zero when specified", "INVALID_VALUE", "limitPrice");
         }
 
-        // Validate trade type values
+        // Validate trade type values with specific error codes
         if (!isValidTradeType(request.getTradeType())) {
-            throw new ValidationException("Invalid trade type. Must be BUY or SELL");
+            throw new ValidationException("Invalid trade type. Must be BUY or SELL", "INVALID_ENUM_VALUE", "tradeType");
         }
 
-        // Validate execution status values
+        // Validate execution status values with specific error codes
         if (!isValidExecutionStatus(request.getExecutionStatus())) {
-            throw new ValidationException("Invalid execution status. Must be NEW, PENDING, FILLED, CANCELLED, or REJECTED");
+            throw new ValidationException("Invalid execution status. Must be NEW, PENDING, FILLED, CANCELLED, or REJECTED", "INVALID_ENUM_VALUE", "executionStatus");
         }
     }
 
@@ -249,8 +249,41 @@ public class BulkExecutionProcessor {
      * Custom exception for validation errors.
      */
     public static class ValidationException extends Exception {
+        private final String errorCode;
+        private final String fieldName;
+        
         public ValidationException(String message) {
             super(message);
+            this.errorCode = "VALIDATION_ERROR";
+            this.fieldName = null;
+        }
+        
+        public ValidationException(String message, String errorCode, String fieldName) {
+            super(message);
+            this.errorCode = errorCode;
+            this.fieldName = fieldName;
+        }
+        
+        public String getErrorCode() {
+            return errorCode;
+        }
+        
+        public String getFieldName() {
+            return fieldName;
+        }
+        
+        /**
+         * Get detailed error information for reporting.
+         */
+        public String getDetailedMessage() {
+            StringBuilder sb = new StringBuilder(getMessage());
+            if (errorCode != null) {
+                sb.append(" [Code: ").append(errorCode).append("]");
+            }
+            if (fieldName != null) {
+                sb.append(" [Field: ").append(fieldName).append("]");
+            }
+            return sb.toString();
         }
     }
 

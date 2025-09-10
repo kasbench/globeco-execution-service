@@ -38,6 +38,7 @@ public class ExecutionServiceImpl implements ExecutionService {
     private final BulkExecutionProcessor bulkExecutionProcessor;
     private final AsyncKafkaPublisher asyncKafkaPublisher;
     private final BatchProcessingMetrics metrics;
+    private final ErrorRecoveryService errorRecoveryService;
     private final String ordersTopic;
 
     public ExecutionServiceImpl(
@@ -48,6 +49,7 @@ public class ExecutionServiceImpl implements ExecutionService {
             BulkExecutionProcessor bulkExecutionProcessor,
             AsyncKafkaPublisher asyncKafkaPublisher,
             BatchProcessingMetrics metrics,
+            ErrorRecoveryService errorRecoveryService,
             @Value("${kafka.topic.orders:orders}") String ordersTopic) {
         this.executionRepository = executionRepository;
         this.kafkaTemplate = kafkaTemplate;
@@ -56,6 +58,7 @@ public class ExecutionServiceImpl implements ExecutionService {
         this.bulkExecutionProcessor = bulkExecutionProcessor;
         this.asyncKafkaPublisher = asyncKafkaPublisher;
         this.metrics = metrics;
+        this.errorRecoveryService = errorRecoveryService;
         this.ordersTopic = ordersTopic;
     }
 
@@ -441,9 +444,9 @@ public class ExecutionServiceImpl implements ExecutionService {
         logger.info("Pre-validation completed: {} valid, {} invalid executions", 
             context.getValidExecutionsOnly().size(), context.getValidationErrorIndices().size());
         
-        // Phase 2: Bulk database operations with optimized transaction boundaries
+        // Phase 2: Bulk database operations with comprehensive error handling and fallback
         if (!context.getValidExecutionsOnly().isEmpty()) {
-            processBulkDatabaseOperations(context);
+            processBulkDatabaseOperationsWithRecovery(context);
         }
         
         logger.info("Database operations completed: {} successful, {} failed", 
@@ -477,15 +480,15 @@ public class ExecutionServiceImpl implements ExecutionService {
     }
     
     /**
-     * Process bulk database operations with optimized transaction boundaries.
-     * Uses separate transactions for each batch to avoid long-running transactions.
+     * Process bulk database operations with comprehensive error handling and recovery mechanisms.
+     * Uses ErrorRecoveryService for fallback to individual inserts when bulk operations fail.
      */
-    private void processBulkDatabaseOperations(BatchProcessingContext context) {
+    private void processBulkDatabaseOperationsWithRecovery(BatchProcessingContext context) {
         List<Execution> validExecutions = context.getValidExecutionsOnly();
         
         try {
-            // Use bulk insert for optimal performance
-            List<Execution> savedExecutions = bulkInsertExecutions(validExecutions);
+            // Use ErrorRecoveryService for bulk insert with fallback mechanism
+            List<Execution> savedExecutions = errorRecoveryService.bulkInsertWithFallback(validExecutions, context);
             
             // Update context with successful database operations
             for (int i = 0; i < savedExecutions.size(); i++) {
@@ -496,54 +499,28 @@ public class ExecutionServiceImpl implements ExecutionService {
             }
             
         } catch (Exception e) {
-            logger.error("Bulk database operation failed, falling back to individual inserts: {}", e.getMessage());
-            metrics.recordDatabaseError("bulk_insert", e.getClass().getSimpleName());
-            // Fallback to individual inserts for error isolation
-            processFallbackIndividualInserts(context, validExecutions);
-        }
-    }
-    
-    /**
-     * Perform bulk insert operations using the repository's bulk insert method.
-     */
-    @Transactional
-    private List<Execution> bulkInsertExecutions(List<Execution> executions) {
-        logger.debug("Performing bulk insert for {} executions", executions.size());
-        
-        OffsetDateTime startTime = OffsetDateTime.now();
-        try {
-            List<Execution> result = executionRepository.bulkInsert(executions);
-            Duration duration = Duration.between(startTime, OffsetDateTime.now());
-            metrics.recordBulkInsert(executions.size(), duration);
-            return result;
-        } catch (Exception e) {
-            Duration duration = Duration.between(startTime, OffsetDateTime.now());
-            metrics.recordDatabaseError("bulk_insert", e.getClass().getSimpleName());
-            throw e;
-        }
-    }
-    
-    /**
-     * Fallback method to process individual inserts when bulk operations fail.
-     */
-    private void processFallbackIndividualInserts(BatchProcessingContext context, List<Execution> validExecutions) {
-        logger.info("Processing {} executions individually as fallback", validExecutions.size());
-        
-        for (int i = 0; i < validExecutions.size(); i++) {
-            Execution execution = validExecutions.get(i);
-            int originalIndex = findOriginalRequestIndex(context, execution, i);
+            logger.error("Critical error in bulk database operations: {}", e.getMessage(), e);
+            metrics.recordDatabaseError("bulk_operation_critical", e.getClass().getSimpleName());
             
-            try {
-                Execution savedExecution = saveIndividualExecution(execution);
-                context.recordDatabaseSuccess(originalIndex, savedExecution);
-                logger.debug("Successfully saved execution at index {} individually", originalIndex);
+            // Last resort: mark all as failed with detailed error information
+            for (int i = 0; i < validExecutions.size(); i++) {
+                Execution execution = validExecutions.get(i);
+                int originalIndex = findOriginalRequestIndex(context, execution, i);
                 
-            } catch (Exception e) {
-                logger.error("Failed to save execution at index {} individually: {}", originalIndex, e.getMessage());
-                context.recordDatabaseError(originalIndex, e);
+                ErrorRecoveryService.DatabaseError dbError = new ErrorRecoveryService.DatabaseError(
+                    originalIndex,
+                    execution,
+                    e,
+                    null,
+                    "Critical failure in bulk database operations - all fallback mechanisms exhausted"
+                );
+                
+                context.recordDatabaseError(originalIndex, dbError);
             }
         }
     }
+    
+
     
     /**
      * Save a single execution in its own transaction.
@@ -803,7 +780,7 @@ public class ExecutionServiceImpl implements ExecutionService {
             logger.debug("Failed to retrieve Kafka publishing metrics: {}", e.getMessage());
         }
     }
-    
+
     /**
      * Update the trade service with execution fill information.
      * This method is called asynchronously to avoid blocking the main transaction.
