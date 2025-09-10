@@ -12,7 +12,8 @@ import java.util.List;
 import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.when;
 
 /**
@@ -33,7 +34,12 @@ class BulkExecutionProcessorTest {
         when(batchProperties.getBulkInsertBatchSize()).thenReturn(500);
 
         BatchProcessingMetrics mockMetrics = mock(BatchProcessingMetrics.class);
-        processor = new BulkExecutionProcessor(batchProperties, mockMetrics);
+        BatchSizeOptimizer mockOptimizer = mock(BatchSizeOptimizer.class);
+        when(mockOptimizer.calculateBatchSplits(anyInt())).thenAnswer(invocation -> {
+            int size = invocation.getArgument(0);
+            return new int[]{size}; // Return single batch for simplicity
+        });
+        processor = new BulkExecutionProcessor(batchProperties, mockMetrics, mockOptimizer);
     }
 
     @Test

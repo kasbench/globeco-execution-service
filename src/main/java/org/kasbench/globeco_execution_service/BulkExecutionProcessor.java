@@ -24,12 +24,15 @@ public class BulkExecutionProcessor {
 
     private final BatchExecutionProperties batchProperties;
     private final BatchProcessingMetrics metrics;
+    private final BatchSizeOptimizer batchSizeOptimizer;
 
     @Autowired
     public BulkExecutionProcessor(BatchExecutionProperties batchProperties, 
-                                BatchProcessingMetrics metrics) {
+                                BatchProcessingMetrics metrics,
+                                BatchSizeOptimizer batchSizeOptimizer) {
         this.batchProperties = batchProperties;
         this.metrics = metrics;
+        this.batchSizeOptimizer = batchSizeOptimizer;
     }
 
     /**
@@ -59,8 +62,13 @@ public class BulkExecutionProcessor {
             int validCount = context.getValidatedExecutions().size();
             int errorCount = context.getValidationErrors().size();
             
+            // Record batch performance for optimization
+            long processingTimeMs = validationDuration.toMillis();
+            boolean success = errorCount == 0 || (validCount > 0 && errorCount < executionRequests.size());
+            batchSizeOptimizer.recordBatchPerformance(executionRequests.size(), processingTimeMs, success);
+            
             logger.debug("Batch processing completed: {} valid, {} invalid executions in {}ms", 
-                        validCount, errorCount, validationDuration.toMillis());
+                        validCount, errorCount, processingTimeMs);
             
             return context;
             
@@ -173,28 +181,33 @@ public class BulkExecutionProcessor {
     }
 
     /**
-     * Split large batches into optimal sizes for database operations.
+     * Split large batches into optimal sizes for database operations using dynamic batch sizing.
      */
     private void splitIntoBatches(BatchProcessingContext context) {
         List<Execution> allExecutions = context.getValidatedExecutions();
-        int batchSize = batchProperties.getBulkInsertBatchSize();
         
-        if (allExecutions.size() <= batchSize) {
+        // Use batch size optimizer to determine optimal splits
+        int[] batchSizes = batchSizeOptimizer.calculateBatchSplits(allExecutions.size());
+        
+        if (batchSizes.length == 1) {
             // No splitting needed
             context.setExecutionBatches(List.of(allExecutions));
             return;
         }
 
-        // Split into multiple batches
+        // Split into multiple batches using optimized sizes
         List<List<Execution>> batches = new ArrayList<>();
-        for (int i = 0; i < allExecutions.size(); i += batchSize) {
-            int endIndex = Math.min(i + batchSize, allExecutions.size());
-            batches.add(new ArrayList<>(allExecutions.subList(i, endIndex)));
+        int currentIndex = 0;
+        
+        for (int batchSize : batchSizes) {
+            int endIndex = Math.min(currentIndex + batchSize, allExecutions.size());
+            batches.add(new ArrayList<>(allExecutions.subList(currentIndex, endIndex)));
+            currentIndex = endIndex;
         }
 
         context.setExecutionBatches(batches);
-        logger.debug("Split {} executions into {} batches of max size {}", 
-                    allExecutions.size(), batches.size(), batchSize);
+        logger.debug("Split {} executions into {} batches using optimized sizes: {}", 
+                    allExecutions.size(), batches.size(), batchSizes);
     }
 
     /**
