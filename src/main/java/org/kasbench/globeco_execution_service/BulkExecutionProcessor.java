@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -22,10 +23,13 @@ public class BulkExecutionProcessor {
     private static final Logger logger = LoggerFactory.getLogger(BulkExecutionProcessor.class);
 
     private final BatchExecutionProperties batchProperties;
+    private final BatchProcessingMetrics metrics;
 
     @Autowired
-    public BulkExecutionProcessor(BatchExecutionProperties batchProperties) {
+    public BulkExecutionProcessor(BatchExecutionProperties batchProperties, 
+                                BatchProcessingMetrics metrics) {
         this.batchProperties = batchProperties;
+        this.metrics = metrics;
     }
 
     /**
@@ -37,22 +41,33 @@ public class BulkExecutionProcessor {
     public BatchProcessingContext processBatch(List<ExecutionPostDTO> executionRequests) {
         logger.debug("Processing batch of {} execution requests", executionRequests.size());
         
+        OffsetDateTime startTime = OffsetDateTime.now();
         BatchProcessingContext context = new BatchProcessingContext(executionRequests);
         
-        // Validate all executions first
-        validateExecutions(executionRequests, context);
-        
-        // Prepare valid executions for bulk operations
-        prepareValidExecutions(context);
-        
-        // Split into optimal batch sizes if needed
-        splitIntoBatches(context);
-        
-        logger.debug("Batch processing completed: {} valid, {} invalid executions", 
-                    context.getValidatedExecutions().size(), 
-                    context.getValidationErrors().size());
-        
-        return context;
+        try {
+            // Validate all executions first
+            validateExecutions(executionRequests, context);
+            
+            // Prepare valid executions for bulk operations
+            prepareValidExecutions(context);
+            
+            // Split into optimal batch sizes if needed
+            splitIntoBatches(context);
+            
+            // Record validation metrics
+            Duration validationDuration = Duration.between(startTime, OffsetDateTime.now());
+            int validCount = context.getValidatedExecutions().size();
+            int errorCount = context.getValidationErrors().size();
+            
+            logger.debug("Batch processing completed: {} valid, {} invalid executions in {}ms", 
+                        validCount, errorCount, validationDuration.toMillis());
+            
+            return context;
+            
+        } catch (Exception e) {
+            logger.error("Error during batch processing: {}", e.getMessage(), e);
+            throw e;
+        }
     }
 
     /**

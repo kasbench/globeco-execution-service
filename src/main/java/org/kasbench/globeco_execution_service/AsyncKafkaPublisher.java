@@ -7,6 +7,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Component;
 
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -28,6 +29,7 @@ public class AsyncKafkaPublisher {
     
     private final KafkaTemplate<String, ExecutionDTO> kafkaTemplate;
     private final BatchExecutionProperties batchProperties;
+    private final BatchProcessingMetrics metrics;
     private final String ordersTopic;
     private final String deadLetterTopic;
     private final ScheduledExecutorService retryExecutor;
@@ -48,9 +50,11 @@ public class AsyncKafkaPublisher {
     public AsyncKafkaPublisher(
             KafkaTemplate<String, ExecutionDTO> kafkaTemplate,
             BatchExecutionProperties batchProperties,
+            BatchProcessingMetrics metrics,
             @Value("${kafka.topic.orders:orders}") String ordersTopic) {
         this.kafkaTemplate = kafkaTemplate;
         this.batchProperties = batchProperties;
+        this.metrics = metrics;
         this.ordersTopic = ordersTopic;
         this.deadLetterTopic = ordersTopic + ".dlq";
         this.retryExecutor = Executors.newScheduledThreadPool(2, r -> {
@@ -126,21 +130,26 @@ public class AsyncKafkaPublisher {
             try {
                 logger.debug("Publishing execution {} to Kafka (attempt {})", execution.getId(), attemptNumber + 1);
                 
+                OffsetDateTime startTime = OffsetDateTime.now();
                 CompletableFuture<SendResult<String, ExecutionDTO>> sendFuture = 
                     kafkaTemplate.send(ordersTopic, execution.getId().toString(), execution);
                 
                 sendFuture.whenComplete((result, throwable) -> {
+                    Duration duration = Duration.between(startTime, OffsetDateTime.now());
+                    
                     if (throwable == null) {
                         // Success
                         logger.debug("Successfully published execution {} to Kafka on attempt {}", 
                             execution.getId(), attemptNumber + 1);
                         successfulPublishes.incrementAndGet();
+                        metrics.recordKafkaPublishSuccess(duration);
                         onPublishSuccess();
                         future.complete(PublishResult.success(execution.getId(), attemptNumber));
                     } else {
                         // Failure
                         logger.warn("Failed to publish execution {} to Kafka on attempt {}: {}", 
                             execution.getId(), attemptNumber + 1, throwable.getMessage());
+                        metrics.recordKafkaPublishFailure(duration, throwable.getClass().getSimpleName());
                         onPublishFailure();
                         handlePublishFailure(execution, attemptNumber, throwable, future);
                     }
@@ -149,6 +158,8 @@ public class AsyncKafkaPublisher {
             } catch (Exception e) {
                 logger.error("Unexpected error publishing execution {} to Kafka on attempt {}: {}", 
                     execution.getId(), attemptNumber + 1, e.getMessage(), e);
+                Duration duration = Duration.between(OffsetDateTime.now(), OffsetDateTime.now()); // Immediate failure
+                metrics.recordKafkaPublishFailure(duration, e.getClass().getSimpleName());
                 onPublishFailure();
                 handlePublishFailure(execution, attemptNumber, e, future);
             }
@@ -172,6 +183,7 @@ public class AsyncKafkaPublisher {
                 execution.getId(), delay, attemptNumber + 1, retryProps.getMaxAttempts());
             
             retriedPublishes.incrementAndGet();
+            metrics.recordKafkaRetry(attemptNumber + 1);
             
             retryExecutor.schedule(() -> {
                 publishWithRetry(execution, attemptNumber + 1)
@@ -258,6 +270,8 @@ public class AsyncKafkaPublisher {
         if (failures >= perfProps.getCircuitBreakerFailureThreshold() && circuitState == CircuitBreakerState.CLOSED) {
             logger.warn("Circuit breaker transitioning from CLOSED to OPEN after {} failures", failures);
             circuitState = CircuitBreakerState.OPEN;
+            lastFailureTime.set(System.currentTimeMillis());
+            metrics.recordKafkaCircuitBreakerOpen("failure_threshold_exceeded");
         }
     }
     

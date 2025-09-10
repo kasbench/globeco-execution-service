@@ -70,7 +70,8 @@ class DeadLetterQueueIntegrationTest {
         lenient().when(meterRegistry.counter(anyString())).thenReturn(counter);
         lenient().when(counter.count()).thenReturn(0.0);
         
-        publisher = new AsyncKafkaPublisher(kafkaTemplate, batchProperties, "test-topic");
+        BatchProcessingMetrics mockMetrics = mock(BatchProcessingMetrics.class);
+        publisher = new AsyncKafkaPublisher(kafkaTemplate, batchProperties, mockMetrics, "test-topic");
         monitor = new DeadLetterQueueMonitor(publisher, batchProperties, meterRegistry);
 
         // Create test execution
@@ -252,7 +253,8 @@ class DeadLetterQueueIntegrationTest {
         // Act - generate DLQ messages by creating separate publishers to avoid circuit breaker
         for (int i = 0; i < 12; i++) {
             // Create a new publisher for each message to avoid circuit breaker blocking
-            AsyncKafkaPublisher separatePublisher = new AsyncKafkaPublisher(kafkaTemplate, batchProperties, "test-topic");
+            BatchProcessingMetrics separateMockMetrics = mock(BatchProcessingMetrics.class);
+            AsyncKafkaPublisher separatePublisher = new AsyncKafkaPublisher(kafkaTemplate, batchProperties, separateMockMetrics, "test-topic");
             
             ExecutionDTO execution = new ExecutionDTO(
                     i + 1, "NEW", "BUY", "NYSE", new SecurityDTO("TEST", "Test"),

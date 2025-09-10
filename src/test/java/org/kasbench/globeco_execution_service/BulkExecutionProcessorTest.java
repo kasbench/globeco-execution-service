@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
@@ -31,7 +32,8 @@ class BulkExecutionProcessorTest {
         // Set up default mock behavior - only mock what we actually use
         when(batchProperties.getBulkInsertBatchSize()).thenReturn(500);
 
-        processor = new BulkExecutionProcessor(batchProperties);
+        BatchProcessingMetrics mockMetrics = mock(BatchProcessingMetrics.class);
+        processor = new BulkExecutionProcessor(batchProperties, mockMetrics);
     }
 
     @Test

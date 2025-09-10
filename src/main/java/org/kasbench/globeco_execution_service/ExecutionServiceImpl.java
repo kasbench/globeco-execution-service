@@ -13,7 +13,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.beans.factory.annotation.Value;
 
+import io.micrometer.core.instrument.Timer;
+
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -34,6 +37,7 @@ public class ExecutionServiceImpl implements ExecutionService {
     private final SecurityServiceClient securityServiceClient;
     private final BulkExecutionProcessor bulkExecutionProcessor;
     private final AsyncKafkaPublisher asyncKafkaPublisher;
+    private final BatchProcessingMetrics metrics;
     private final String ordersTopic;
 
     public ExecutionServiceImpl(
@@ -43,6 +47,7 @@ public class ExecutionServiceImpl implements ExecutionService {
             SecurityServiceClient securityServiceClient,
             BulkExecutionProcessor bulkExecutionProcessor,
             AsyncKafkaPublisher asyncKafkaPublisher,
+            BatchProcessingMetrics metrics,
             @Value("${kafka.topic.orders:orders}") String ordersTopic) {
         this.executionRepository = executionRepository;
         this.kafkaTemplate = kafkaTemplate;
@@ -50,6 +55,7 @@ public class ExecutionServiceImpl implements ExecutionService {
         this.securityServiceClient = securityServiceClient;
         this.bulkExecutionProcessor = bulkExecutionProcessor;
         this.asyncKafkaPublisher = asyncKafkaPublisher;
+        this.metrics = metrics;
         this.ordersTopic = ordersTopic;
     }
 
@@ -417,8 +423,10 @@ public class ExecutionServiceImpl implements ExecutionService {
     
     @Override
     public BatchExecutionResponseDTO createBatchExecutions(BatchExecutionRequestDTO batchRequest) {
-        long startTime = System.currentTimeMillis();
-        logger.info("Starting batch execution processing for {} executions", batchRequest.getExecutions().size());
+        int batchSize = batchRequest.getExecutions().size();
+        Timer.Sample batchTimer = metrics.startBatchProcessing(batchSize);
+        
+        logger.info("Starting batch execution processing for {} executions", batchSize);
         
         // Phase 1: Pre-validation using BulkExecutionProcessor
         BulkExecutionProcessor.BatchProcessingContext processingContext = bulkExecutionProcessor.processBatch(batchRequest.getExecutions());
@@ -430,37 +438,40 @@ public class ExecutionServiceImpl implements ExecutionService {
         transferValidationResults(processingContext, context);
         context.setProcessingPhase(BatchProcessingContext.ProcessingPhase.DATABASE_OPERATIONS);
         
-        long validationTime = System.currentTimeMillis();
-        logger.info("Pre-validation completed in {}ms: {} valid, {} invalid executions", 
-            validationTime - startTime, context.getValidExecutionsOnly().size(), context.getValidationErrorIndices().size());
+        logger.info("Pre-validation completed: {} valid, {} invalid executions", 
+            context.getValidExecutionsOnly().size(), context.getValidationErrorIndices().size());
         
         // Phase 2: Bulk database operations with optimized transaction boundaries
         if (!context.getValidExecutionsOnly().isEmpty()) {
             processBulkDatabaseOperations(context);
         }
         
-        long databaseTime = System.currentTimeMillis();
-        logger.info("Database operations completed in {}ms: {} successful, {} failed", 
-            databaseTime - validationTime, context.getSuccessfulDatabaseIndices().size(), context.getDatabaseErrorIndices().size());
+        logger.info("Database operations completed: {} successful, {} failed", 
+            context.getSuccessfulDatabaseIndices().size(), context.getDatabaseErrorIndices().size());
         
         // Phase 3: Update sent timestamps for successful executions
         updateSentTimestampsForSuccessfulExecutions(context);
         
-        long timestampTime = System.currentTimeMillis();
-        logger.info("Timestamp updates completed in {}ms", timestampTime - databaseTime);
+        logger.info("Timestamp updates completed");
         
         // Phase 4: Asynchronous Kafka publishing for successful executions
         context.setProcessingPhase(BatchProcessingContext.ProcessingPhase.KAFKA_PUBLISHING);
         publishSuccessfulExecutionsToKafka(context);
         
-        long kafkaTime = System.currentTimeMillis();
-        logger.info("Kafka publishing initiated in {}ms", kafkaTime - timestampTime);
+        logger.info("Kafka publishing initiated");
         
         // Mark processing as complete and return response
         context.setProcessingPhase(BatchProcessingContext.ProcessingPhase.COMPLETED);
         
-        long totalTime = System.currentTimeMillis() - startTime;
-        logger.info("Batch execution processing completed in {}ms total", totalTime);
+        // Record batch processing metrics
+        boolean successful = context.getDatabaseErrorIndices().isEmpty() || 
+                           !context.getSuccessfulDatabaseIndices().isEmpty();
+        int processedCount = context.getSuccessfulDatabaseIndices().size() + context.getDatabaseErrorIndices().size();
+        int successCount = context.getSuccessfulDatabaseIndices().size();
+        
+        metrics.recordBatchProcessingComplete(batchTimer, successful, processedCount, successCount);
+        
+        logger.info("Batch execution processing completed");
         
         return context.getBatchResponse();
     }
@@ -486,6 +497,7 @@ public class ExecutionServiceImpl implements ExecutionService {
             
         } catch (Exception e) {
             logger.error("Bulk database operation failed, falling back to individual inserts: {}", e.getMessage());
+            metrics.recordDatabaseError("bulk_insert", e.getClass().getSimpleName());
             // Fallback to individual inserts for error isolation
             processFallbackIndividualInserts(context, validExecutions);
         }
@@ -497,7 +509,18 @@ public class ExecutionServiceImpl implements ExecutionService {
     @Transactional
     private List<Execution> bulkInsertExecutions(List<Execution> executions) {
         logger.debug("Performing bulk insert for {} executions", executions.size());
-        return executionRepository.bulkInsert(executions);
+        
+        OffsetDateTime startTime = OffsetDateTime.now();
+        try {
+            List<Execution> result = executionRepository.bulkInsert(executions);
+            Duration duration = Duration.between(startTime, OffsetDateTime.now());
+            metrics.recordBulkInsert(executions.size(), duration);
+            return result;
+        } catch (Exception e) {
+            Duration duration = Duration.between(startTime, OffsetDateTime.now());
+            metrics.recordDatabaseError("bulk_insert", e.getClass().getSimpleName());
+            throw e;
+        }
     }
     
     /**
@@ -559,6 +582,7 @@ public class ExecutionServiceImpl implements ExecutionService {
                 
             } catch (Exception e) {
                 logger.error("Failed to bulk update sent timestamps: {}", e.getMessage());
+                metrics.recordDatabaseError("bulk_update_timestamp", e.getClass().getSimpleName());
                 // This is not critical for the success of the batch operation
             }
         }
@@ -569,7 +593,18 @@ public class ExecutionServiceImpl implements ExecutionService {
      */
     @Transactional
     private void bulkUpdateSentTimestamps(List<Integer> executionIds, OffsetDateTime sentTimestamp) {
-        executionRepository.bulkUpdateSentTimestamp(executionIds, sentTimestamp);
+        logger.debug("Performing bulk timestamp update for {} executions", executionIds.size());
+        
+        OffsetDateTime startTime = OffsetDateTime.now();
+        try {
+            executionRepository.bulkUpdateSentTimestamp(executionIds, sentTimestamp);
+            Duration duration = Duration.between(startTime, OffsetDateTime.now());
+            metrics.recordBulkUpdate(executionIds.size(), duration);
+        } catch (Exception e) {
+            Duration duration = Duration.between(startTime, OffsetDateTime.now());
+            metrics.recordDatabaseError("bulk_update_timestamp", e.getClass().getSimpleName());
+            throw e;
+        }
     }
     
     /**

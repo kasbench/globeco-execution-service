@@ -52,7 +52,8 @@ class AsyncKafkaPublisherTest {
         perfProps.setCircuitBreakerRecoveryTimeout(5000);
         batchProperties.setPerformance(perfProps);
 
-        publisher = new AsyncKafkaPublisher(kafkaTemplate, batchProperties, "test-topic");
+        BatchProcessingMetrics mockMetrics = mock(BatchProcessingMetrics.class);
+        publisher = new AsyncKafkaPublisher(kafkaTemplate, batchProperties, mockMetrics, "test-topic");
 
         // Create test execution
         testExecution = new ExecutionDTO(
