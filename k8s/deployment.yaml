@@ -19,6 +19,21 @@ spec:
           imagePullPolicy: Always
           ports:
             - containerPort: 8084
+          env:
+            # Inject the node IP from the Downward API
+            - name: NODE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            # Point OTEL exporter to the local collector on the same node
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://$(NODE_IP):4317"
+            # Override OTLP metrics export URL to use host networking
+            - name: MANAGEMENT_OTLP_METRICS_EXPORT_URL
+              value: "http://$(NODE_IP):4318/v1/metrics"
+            # Override OTLP tracing endpoint to use host networking
+            - name: MANAGEMENT_OTLP_TRACING_ENDPOINT
+              value: "http://$(NODE_IP):4318/v1/traces"
           resources:
             requests:
               cpu: 100m
