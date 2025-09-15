@@ -94,7 +94,7 @@ public class DatabaseMetricsMonitor {
                                             int awaiting, int max) {
         double utilization = max > 0 ? (double) active / max * 100.0 : 0.0;
         
-        logger.info("Connection Pool Metrics - Active: {}, Idle: {}, Total: {}, Max: {}, " +
+        logger.debug("Connection Pool Metrics - Active: {}, Idle: {}, Total: {}, Max: {}, " +
                    "Utilization: {:.1f}%, Threads Awaiting: {}", 
                    active, idle, total, max, utilization, awaiting);
     }

@@ -84,7 +84,7 @@ public class ExecutionServiceImpl implements ExecutionService {
     @Transactional(readOnly = true)
     public ExecutionPageDTO findExecutions(ExecutionQueryParams queryParams) {
         long startTime = System.currentTimeMillis();
-        logger.info("Starting findExecutions query - offset: {}, limit: {}, filters: [id: {}, status: {}, tradeType: {}, destination: {}, ticker: {}]", 
+        logger.debug("Starting findExecutions query - offset: {}, limit: {}, filters: [id: {}, status: {}, tradeType: {}, destination: {}, ticker: {}]", 
             queryParams.getId(), queryParams.getOffset(), queryParams.getLimit(), 
             queryParams.getExecutionStatus(), queryParams.getTradeType(), 
             queryParams.getDestination(), queryParams.getTicker());
@@ -174,14 +174,14 @@ public class ExecutionServiceImpl implements ExecutionService {
         }
         
         long queryEndTime = System.currentTimeMillis();
-        logger.info("Database query completed in {}ms - returned {} executions out of {} total (optimized: {})", 
+        logger.debug("Database query completed in {}ms - returned {} executions out of {} total (optimized: {})", 
             queryEndTime - queryStartTime, page.getContent().size(), page.getTotalElements(), canUseOptimizedPath);
         
         // Convert to DTOs with security information using batch optimization
         long dtoStartTime = System.currentTimeMillis();
         List<ExecutionDTO> executionDTOs = convertToDTOsBatch(page.getContent());
         long dtoEndTime = System.currentTimeMillis();
-        logger.info("DTO conversion with security enrichment completed in {}ms", dtoEndTime - dtoStartTime);
+        logger.debug("DTO conversion with security enrichment completed in {}ms", dtoEndTime - dtoStartTime);
         
         // Create pagination metadata
         PaginationDTO pagination = new PaginationDTO(
@@ -195,7 +195,7 @@ public class ExecutionServiceImpl implements ExecutionService {
         );
         
         long totalTime = System.currentTimeMillis() - startTime;
-        logger.info("Total findExecutions operation completed in {}ms - breakdown: query={}ms, dto_conversion={}ms", 
+        logger.debug("Total findExecutions operation completed in {}ms - breakdown: query={}ms, dto_conversion={}ms", 
             totalTime, queryEndTime - queryStartTime, dtoEndTime - dtoStartTime);
         
         return new ExecutionPageDTO(executionDTOs, pagination);
@@ -308,7 +308,7 @@ public class ExecutionServiceImpl implements ExecutionService {
         try {
             Map<String, SecurityDTO> result = securityServiceClient.getSecuritiesByIds(uniqueSecurityIds);
             long securityFetchEnd = System.currentTimeMillis();
-            logger.info("Security service batch fetch completed in {}ms for {} unique securities", 
+            logger.debug("Security service batch fetch completed in {}ms for {} unique securities", 
                 securityFetchEnd - securityFetchStart, uniqueSecurityIds.size());
             return result;
             
@@ -332,7 +332,7 @@ public class ExecutionServiceImpl implements ExecutionService {
             }
             
             long securityFetchEnd = System.currentTimeMillis();
-            logger.info("Security service fallback fetch completed in {}ms for {} unique securities", 
+            logger.debug("Security service fallback fetch completed in {}ms for {} unique securities", 
                 securityFetchEnd - securityFetchStart, uniqueSecurityIds.size());
             
             return fallbackMap;
@@ -429,7 +429,7 @@ public class ExecutionServiceImpl implements ExecutionService {
         int batchSize = batchRequest.getExecutions().size();
         Timer.Sample batchTimer = metrics.startBatchProcessing(batchSize);
         
-        logger.info("Starting batch execution processing for {} executions", batchSize);
+        logger.debug("Starting batch execution processing for {} executions", batchSize);
         
         // Phase 1: Pre-validation using BulkExecutionProcessor
         BulkExecutionProcessor.BatchProcessingContext processingContext = bulkExecutionProcessor.processBatch(batchRequest.getExecutions());
@@ -441,7 +441,7 @@ public class ExecutionServiceImpl implements ExecutionService {
         transferValidationResults(processingContext, context);
         context.setProcessingPhase(BatchProcessingContext.ProcessingPhase.DATABASE_OPERATIONS);
         
-        logger.info("Pre-validation completed: {} valid, {} invalid executions", 
+        logger.debug("Pre-validation completed: {} valid, {} invalid executions", 
             context.getValidExecutionsOnly().size(), context.getValidationErrorIndices().size());
         
         // Phase 2: Bulk database operations with comprehensive error handling and fallback
@@ -449,19 +449,19 @@ public class ExecutionServiceImpl implements ExecutionService {
             processBulkDatabaseOperationsWithRecovery(context);
         }
         
-        logger.info("Database operations completed: {} successful, {} failed", 
+        logger.debug("Database operations completed: {} successful, {} failed", 
             context.getSuccessfulDatabaseIndices().size(), context.getDatabaseErrorIndices().size());
         
         // Phase 3: Update sent timestamps for successful executions
         updateSentTimestampsForSuccessfulExecutions(context);
         
-        logger.info("Timestamp updates completed");
+        logger.debug("Timestamp updates completed");
         
         // Phase 4: Asynchronous Kafka publishing for successful executions
         context.setProcessingPhase(BatchProcessingContext.ProcessingPhase.KAFKA_PUBLISHING);
         publishSuccessfulExecutionsToKafka(context);
         
-        logger.info("Kafka publishing initiated");
+        logger.debug("Kafka publishing initiated");
         
         // Mark processing as complete and return response
         context.setProcessingPhase(BatchProcessingContext.ProcessingPhase.COMPLETED);
@@ -474,7 +474,7 @@ public class ExecutionServiceImpl implements ExecutionService {
         
         metrics.recordBatchProcessingComplete(batchTimer, successful, processedCount, successCount);
         
-        logger.info("Batch execution processing completed");
+        logger.debug("Batch execution processing completed");
         
         return context.getBatchResponse();
     }
@@ -713,7 +713,7 @@ public class ExecutionServiceImpl implements ExecutionService {
             return;
         }
         
-        logger.info("Publishing {} successful executions to Kafka asynchronously", successfulExecutions.size());
+        logger.debug("Publishing {} successful executions to Kafka asynchronously", successfulExecutions.size());
         
         // Publish batch asynchronously and handle results
         asyncKafkaPublisher.publishBatchAsync(successfulExecutions)
@@ -737,7 +737,7 @@ public class ExecutionServiceImpl implements ExecutionService {
     private void handleKafkaPublishResults(BatchProcessingContext context, List<Integer> successfulIndices, 
                                          AsyncKafkaPublisher.BatchPublishResult batchResult) {
         
-        logger.info("Kafka batch publishing completed: {} successful, {} failed, {} skipped out of {} total",
+        logger.debug("Kafka batch publishing completed: {} successful, {} failed, {} skipped out of {} total",
             batchResult.getSuccessfulMessages(), batchResult.getFailedMessages(), 
             batchResult.getSkippedMessages(), batchResult.getTotalMessages());
         
@@ -771,7 +771,7 @@ public class ExecutionServiceImpl implements ExecutionService {
     private void logKafkaPublishingMetrics() {
         try {
             AsyncKafkaPublisher.PublishMetrics metrics = asyncKafkaPublisher.getMetrics();
-            logger.info("Kafka publishing metrics - Total attempts: {}, Success rate: {:.2f}%, " +
+            logger.debug("Kafka publishing metrics - Total attempts: {}, Success rate: {:.2f}%, " +
                        "Failed: {}, Retried: {}, DLQ: {}, Circuit breaker: {}", 
                 metrics.getTotalAttempts(), metrics.getSuccessRate() * 100,
                 metrics.getFailedPublishes(), metrics.getRetriedPublishes(), 
