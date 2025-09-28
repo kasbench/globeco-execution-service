@@ -8,68 +8,9 @@ spec:
   selector:
     app: globeco-execution-service-postgresql
   ports:
-    - port: 5432
+    - protocol: TCP
+      port: 5432
       targetPort: 5432
----
-apiVersion: apps/v1
-kind: StatefulSet
-metadata:
-  name: globeco-execution-service-postgresql
-  namespace: globeco
-spec:
-  serviceName: globeco-execution-servicepostgresql-headless
-  replicas: 1
-  selector:
-    matchLabels:
-      app: globeco-execution-service-postgresql
-  template:
-    metadata:
-      labels:
-        app: globeco-execution-service-postgresql
-    spec:
-      initContainers:
-        - name: init-postgres-data
-          image: busybox:1.35
-          command:
-            - /bin/sh
-            - -c
-            - |
-              mkdir -p /var/lib/postgresql/data/pgdata
-              chown -R 999:999 /var/lib/postgresql/data/pgdata
-              chmod 700 /var/lib/postgresql/data/pgdata
-          volumeMounts:
-            - name: globeco-execution-service-postgresdb-storage
-              mountPath: /var/lib/postgresql/data
-      containers:
-        - name: globeco-execution-service-postgresql
-          image: postgres:latest
-          imagePullPolicy: Always
-          ports:
-            - containerPort: 5432
-          env:
-            - name: POSTGRES_HOST_AUTH_METHOD
-              value: "trust"
-            - name: PGDATA
-              value: "/var/lib/postgresql/data/pgdata"
-          args:
-            - "-c"
-            - "listen_addresses=0.0.0.0"
-          volumeMounts:
-            - name: globeco-execution-service-postgresdb-storage
-              mountPath: /var/lib/postgresql/data
-  volumeClaimTemplates:
-    - metadata:
-        name: globeco-execution-service-postgresdb-storage
-      spec:
-        accessModes: [ "ReadWriteOnce" ]
-        storageClassName: local-storage
-        selector:
-          matchLabels:
-            app: execution-service-postgres
-            type: local
-        resources:
-          requests:
-            storage: 10Gi
 ---
 apiVersion: v1
 kind: Service
@@ -83,4 +24,68 @@ spec:
     - protocol: TCP
       port: 5432
       targetPort: 5432
-  type: ClusterIP 
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: globeco-execution-service-postgresql
+  namespace: globeco
+spec:
+  serviceName: globeco-execution-service-postgresql-headless
+  replicas: 1
+  selector:
+    matchLabels:
+      app: globeco-execution-service-postgresql
+  template:
+    metadata:
+      labels:
+        app: globeco-execution-service-postgresql
+    spec:
+      initContainers:
+        - name: init-postgres-data
+          image: busybox:1.35
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+          command:
+            - /bin/sh
+            - -c
+            - |
+              mkdir -p /mnt/postgres-data/pgdata
+              chown -R 999:999 /mnt/postgres-data
+              chmod 755 /mnt/postgres-data
+              chmod 700 /mnt/postgres-data/pgdata
+          volumeMounts:
+            - name: globeco-execution-service-postgresdb-storage
+              mountPath: /mnt/postgres-data
+      containers:
+        - name: globeco-execution-service-postgresql
+          image: postgres:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_HOST_AUTH_METHOD
+              value: "trust"
+            - name: PGDATA
+              value: "/mnt/postgres-data/pgdata"
+          args:
+            - "-c"
+            - "listen_addresses=0.0.0.0"
+          volumeMounts:
+            - name: globeco-execution-service-postgresdb-storage
+              mountPath: /mnt/postgres-data
+  volumeClaimTemplates:
+    - metadata:
+        name: globeco-execution-service-postgresdb-storage
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: local-storage
+        selector:
+          matchLabels:
+            app: execution-service-postgres
+            type: local
+        resources:
+          requests:
+            storage: 10Gi 
