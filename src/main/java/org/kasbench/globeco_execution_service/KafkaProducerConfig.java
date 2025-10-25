@@ -67,6 +67,6 @@ public class KafkaProducerConfig {
     @Bean
     public NewTopic ordersTopic() {
         // 1 partition, replication factor 1 (can be adjusted as needed)
-        return new NewTopic(ordersTopic, 20, (short) 1);
+        return new NewTopic(ordersTopic, 1, (short) 1);
     }
 } 
