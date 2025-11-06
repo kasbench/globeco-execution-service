@@ -10,6 +10,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.beans.factory.annotation.Value;
 
@@ -425,6 +426,7 @@ public class ExecutionServiceImpl implements ExecutionService {
     }
     
     @Override
+    @Transactional
     public BatchExecutionResponseDTO createBatchExecutions(BatchExecutionRequestDTO batchRequest) {
         int batchSize = batchRequest.getExecutions().size();
         Timer.Sample batchTimer = metrics.startBatchProcessing(batchSize);
@@ -533,8 +535,11 @@ public class ExecutionServiceImpl implements ExecutionService {
     /**
      * Update sent timestamps for all successfully saved executions.
      */
+    @Transactional(propagation = Propagation.REQUIRED)
     private void updateSentTimestampsForSuccessfulExecutions(BatchProcessingContext context) {
         Set<Integer> successfulIndices = context.getSuccessfulDatabaseIndices();
+        logger.debug("Processing timestamp updates for {} successful database operations", successfulIndices.size());
+        
         if (successfulIndices.isEmpty()) {
             logger.debug("No successful executions to update timestamps for");
             return;
@@ -542,43 +547,115 @@ public class ExecutionServiceImpl implements ExecutionService {
         
         // Collect execution IDs from successful operations
         List<Integer> executionIds = new ArrayList<>();
+        int successfulResultCount = 0;
+        int nullResultCount = 0;
+        int nonSuccessResultCount = 0;
+        
         for (ExecutionResultDTO result : context.getResults()) {
-            if (result != null && "SUCCESS".equals(result.getStatus()) && result.getExecution() != null) {
-                executionIds.add(result.getExecution().getId());
+            if (result == null) {
+                nullResultCount++;
+                continue;
             }
+            
+            if (!"SUCCESS".equals(result.getStatus())) {
+                nonSuccessResultCount++;
+                continue;
+            }
+            
+            if (result.getExecution() == null) {
+                logger.warn("Found SUCCESS result with null execution: {}", result);
+                continue;
+            }
+            
+            executionIds.add(result.getExecution().getId());
+            successfulResultCount++;
         }
         
-        if (!executionIds.isEmpty()) {
-            try {
-                OffsetDateTime sentTimestamp = OffsetDateTime.now();
-                bulkUpdateSentTimestamps(executionIds, sentTimestamp);
-                logger.debug("Updated sent timestamps for {} executions", executionIds.size());
-                
-                // Update the DTOs in the context with the sent timestamp
-                updateContextWithSentTimestamps(context, sentTimestamp);
-                
-            } catch (Exception e) {
-                logger.error("Failed to bulk update sent timestamps: {}", e.getMessage());
-                metrics.recordDatabaseError("bulk_update_timestamp", e.getClass().getSimpleName());
-                // This is not critical for the success of the batch operation
+        logger.debug("Result analysis: {} successful, {} null, {} non-success results", 
+            successfulResultCount, nullResultCount, nonSuccessResultCount);
+        
+        if (executionIds.isEmpty()) {
+            logger.warn("No execution IDs found despite {} successful indices. This indicates a data consistency issue.", 
+                successfulIndices.size());
+            return;
+        }
+        
+        if (executionIds.size() != successfulIndices.size()) {
+            logger.warn("Execution ID count ({}) doesn't match successful indices count ({}). " +
+                "This may indicate missing or inconsistent result data.", 
+                executionIds.size(), successfulIndices.size());
+        }
+        
+        try {
+            OffsetDateTime sentTimestamp = OffsetDateTime.now();
+            logger.debug("Attempting to update sent timestamps for {} executions with timestamp: {}", 
+                executionIds.size(), sentTimestamp);
+            
+            // Validate execution IDs exist before bulk update (in debug mode)
+            if (logger.isDebugEnabled()) {
+                validateExecutionIdsExist(executionIds);
             }
+            
+            bulkUpdateSentTimestamps(executionIds, sentTimestamp);
+            logger.debug("Successfully updated sent timestamps for {} executions", executionIds.size());
+            
+            // Update the DTOs in the context with the sent timestamp
+            updateContextWithSentTimestamps(context, sentTimestamp);
+            
+        } catch (Exception e) {
+            logger.error("Failed to bulk update sent timestamps for {} executions. Error: {}", 
+                executionIds.size(), e.getMessage(), e);
+            logger.error("Execution IDs that failed to update: {}", executionIds);
+            logger.error("Context successful indices: {}", successfulIndices);
+            
+            if (e.getCause() != null) {
+                logger.error("Root cause: {}", e.getCause().getMessage(), e.getCause());
+            }
+            
+            // Log additional context for debugging
+            logger.error("Batch context details - Original requests: {}, Results size: {}", 
+                context.getOriginalRequests().size(), context.getResults().size());
+            
+            metrics.recordDatabaseError("bulk_update_timestamp", e.getClass().getSimpleName());
+            // This is not critical for the success of the batch operation
         }
     }
     
     /**
      * Bulk update sent timestamps using the repository's bulk update method.
      */
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRED)
     private void bulkUpdateSentTimestamps(List<Integer> executionIds, OffsetDateTime sentTimestamp) {
-        logger.debug("Performing bulk timestamp update for {} executions", executionIds.size());
+        logger.debug("Performing bulk timestamp update for {} executions with timestamp: {}", 
+            executionIds.size(), sentTimestamp);
+        logger.debug("Execution IDs to update: {}", executionIds);
         
         OffsetDateTime startTime = OffsetDateTime.now();
         try {
-            executionRepository.bulkUpdateSentTimestamp(executionIds, sentTimestamp);
+            int updatedCount = executionRepository.bulkUpdateSentTimestamp(executionIds, sentTimestamp);
             Duration duration = Duration.between(startTime, OffsetDateTime.now());
+            logger.debug("Successfully updated {} out of {} executions in {}ms", 
+                updatedCount, executionIds.size(), duration.toMillis());
+            
+            if (updatedCount != executionIds.size()) {
+                logger.warn("Bulk update mismatch: expected to update {} executions but only updated {}", 
+                    executionIds.size(), updatedCount);
+            }
+            
             metrics.recordBulkUpdate(executionIds.size(), duration);
         } catch (Exception e) {
             Duration duration = Duration.between(startTime, OffsetDateTime.now());
+            logger.error("Bulk timestamp update failed for {} executions after {}ms. Exception: {}", 
+                executionIds.size(), duration.toMillis(), e.getClass().getSimpleName(), e);
+            logger.error("Failed execution IDs: {}", executionIds);
+            logger.error("Attempted timestamp: {}", sentTimestamp);
+            
+            // Log SQL state and error code if it's a SQL exception
+            if (e.getCause() instanceof java.sql.SQLException sqlEx) {
+                logger.error("SQL Error Code: {}, SQL State: {}, SQL Message: {}", 
+                    sqlEx.getErrorCode(), sqlEx.getSQLState(), sqlEx.getMessage());
+            }
+            
             metrics.recordDatabaseError("bulk_update_timestamp", e.getClass().getSimpleName());
             throw e;
         }
@@ -819,6 +896,85 @@ public class ExecutionServiceImpl implements ExecutionService {
             }
         } catch (Exception e) {
             logger.error("Error updating trade service for execution {}: {}", execution.getId(), e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * Validate that execution IDs exist in the database before attempting bulk update.
+     * This helps identify if bulk update failures are due to non-existent IDs.
+     */
+    private void validateExecutionIdsExist(List<Integer> executionIds) {
+        try {
+            List<Integer> existingIds = executionRepository.findAllById(executionIds)
+                .stream()
+                .map(Execution::getId)
+                .collect(Collectors.toList());
+            
+            if (existingIds.size() != executionIds.size()) {
+                List<Integer> missingIds = executionIds.stream()
+                    .filter(id -> !existingIds.contains(id))
+                    .collect(Collectors.toList());
+                
+                logger.warn("Found {} missing execution IDs out of {} requested: {}", 
+                    missingIds.size(), executionIds.size(), missingIds);
+            } else {
+                logger.debug("All {} execution IDs exist in database", executionIds.size());
+            }
+        } catch (Exception e) {
+            logger.warn("Failed to validate execution IDs existence: {}", e.getMessage());
+        }
+    }
+    
+    /**
+     * Diagnostic method to test bulk update functionality with detailed logging.
+     * This can be used to troubleshoot bulk update issues in isolation.
+     */
+    @Transactional
+    public void diagnosticBulkUpdateTest(List<Integer> testExecutionIds) {
+        logger.info("=== DIAGNOSTIC BULK UPDATE TEST START ===");
+        logger.info("Testing bulk update for {} execution IDs: {}", testExecutionIds.size(), testExecutionIds);
+        
+        try {
+            // Step 1: Validate IDs exist
+            logger.info("Step 1: Validating execution IDs exist...");
+            validateExecutionIdsExist(testExecutionIds);
+            
+            // Step 2: Check current state
+            logger.info("Step 2: Checking current execution states...");
+            List<Execution> currentExecutions = executionRepository.findAllById(testExecutionIds);
+            for (Execution exec : currentExecutions) {
+                logger.info("Execution ID {}: status={}, version={}, sentTimestamp={}", 
+                    exec.getId(), exec.getExecutionStatus(), exec.getVersion(), exec.getSentTimestamp());
+            }
+            
+            // Step 3: Attempt bulk update
+            logger.info("Step 3: Attempting bulk update...");
+            OffsetDateTime testTimestamp = OffsetDateTime.now();
+            int updatedCount = executionRepository.bulkUpdateSentTimestamp(testExecutionIds, testTimestamp);
+            logger.info("Bulk update completed successfully. Updated {} records", updatedCount);
+            
+            // Step 4: Verify results
+            logger.info("Step 4: Verifying update results...");
+            List<Execution> updatedExecutions = executionRepository.findAllById(testExecutionIds);
+            for (Execution exec : updatedExecutions) {
+                logger.info("After update - Execution ID {}: status={}, version={}, sentTimestamp={}", 
+                    exec.getId(), exec.getExecutionStatus(), exec.getVersion(), exec.getSentTimestamp());
+            }
+            
+            logger.info("=== DIAGNOSTIC BULK UPDATE TEST COMPLETED SUCCESSFULLY ===");
+            
+        } catch (Exception e) {
+            logger.error("=== DIAGNOSTIC BULK UPDATE TEST FAILED ===");
+            logger.error("Error during diagnostic test: {}", e.getMessage(), e);
+            
+            if (e.getCause() != null) {
+                logger.error("Root cause: {}", e.getCause().getMessage(), e.getCause());
+            }
+            
+            if (e.getCause() instanceof java.sql.SQLException sqlEx) {
+                logger.error("SQL Error Details - Code: {}, State: {}, Message: {}", 
+                    sqlEx.getErrorCode(), sqlEx.getSQLState(), sqlEx.getMessage());
+            }
         }
     }
 } 

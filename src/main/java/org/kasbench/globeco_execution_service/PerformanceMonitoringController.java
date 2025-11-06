@@ -1,15 +1,16 @@
 package org.kasbench.globeco_execution_service;
 
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.actuate.metrics.MetricsEndpoint;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -21,9 +22,12 @@ import java.util.Map;
 public class PerformanceMonitoringController {
     
     private final SecurityServiceClientImpl securityServiceClient;
+    private final ExecutionServiceImpl executionService;
     
-    public PerformanceMonitoringController(SecurityServiceClientImpl securityServiceClient) {
+    public PerformanceMonitoringController(SecurityServiceClientImpl securityServiceClient, 
+                                         ExecutionServiceImpl executionService) {
         this.securityServiceClient = securityServiceClient;
+        this.executionService = executionService;
     }
     
     /**
@@ -68,5 +72,29 @@ public class PerformanceMonitoringController {
     public Map<String, String> clearSecurityCache() {
         securityServiceClient.clearCache();
         return Map.of("status", "Cache cleared successfully");
+    }
+    
+    /**
+     * Diagnostic test for bulk update functionality.
+     */
+    @Operation(
+        summary = "Test bulk update functionality",
+        description = "Runs diagnostic tests on bulk update operations to help troubleshoot issues"
+    )
+    @PostMapping("/diagnostic-bulk-update")
+    public Map<String, String> diagnosticBulkUpdate(@RequestBody List<Integer> executionIds) {
+        try {
+            executionService.diagnosticBulkUpdateTest(executionIds);
+            return Map.of(
+                "status", "success", 
+                "message", "Diagnostic test completed successfully. Check logs for detailed results."
+            );
+        } catch (Exception e) {
+            return Map.of(
+                "status", "error", 
+                "message", "Diagnostic test failed: " + e.getMessage(),
+                "recommendation", "Check application logs for detailed error information"
+            );
+        }
     }
 }

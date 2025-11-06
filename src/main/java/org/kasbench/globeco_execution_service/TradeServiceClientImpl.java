@@ -71,6 +71,8 @@ public class TradeServiceClientImpl implements TradeServiceClient {
     public boolean updateExecutionFill(Integer executionId, TradeServiceExecutionFillDTO fillDTO) {
         String url = baseUrl + "/api/v1/executions/" + executionId + "/fill";
         
+        logger.info("TradeServiceClient.updateExecutionFill called for execution {} with fillDTO: {}", executionId, fillDTO);
+        
         int attempts = 0;
         int maxAttempts = retryEnabled ? maxRetryAttempts : 1;
         
@@ -78,7 +80,7 @@ public class TradeServiceClientImpl implements TradeServiceClient {
             attempts++;
             
             try {
-                logger.debug("Updating execution fill in trade service (attempt {}): {}", attempts, url);
+                logger.info("Updating execution fill in trade service (attempt {}): {}", attempts, url);
                 
                 HttpHeaders headers = new HttpHeaders();
                 headers.setContentType(MediaType.APPLICATION_JSON);

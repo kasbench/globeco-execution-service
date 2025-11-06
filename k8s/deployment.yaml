@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: globeco-execution-service
-          image: kasbench/globeco-execution-service:1.0.0
+          image: kasbench/globeco-execution-service:1.0.1
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8084
@@ -34,6 +34,8 @@ spec:
             # Override OTLP tracing endpoint to use host networking
             - name: MANAGEMENT_OTLP_TRACING_ENDPOINT
               value: "http://$(NODE_IP):4318/v1/traces"
+            - name: DEBUG_LEVEL
+              value: "INFO"
           resources:
             requests:
               cpu: 100m

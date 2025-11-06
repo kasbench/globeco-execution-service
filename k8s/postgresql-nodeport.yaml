@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: globeco-execution-service-postgresql-nodeport
+  namespace: globeco
+  labels:
+    app: globeco-execution-service-postgresql
+spec:
+  type: NodePort
+  selector:
+    app: globeco-execution-service-postgresql
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432
+      nodePort: 30432
