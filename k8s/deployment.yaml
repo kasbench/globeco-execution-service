@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: globeco-execution-service
-          image: kasbench/globeco-execution-service:1.0.1
+          image: kasbench/globeco-execution-service:1.0.2
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8084
