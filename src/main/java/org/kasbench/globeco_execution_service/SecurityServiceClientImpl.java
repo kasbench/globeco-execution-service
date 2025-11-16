@@ -40,12 +40,12 @@ public class SecurityServiceClientImpl implements SecurityServiceClient {
         this.securityServiceBaseUrl = securityServiceBaseUrl;
         this.tickerCache = Caffeine.newBuilder()
                 .maximumSize(10000)
-                .expireAfterWrite(Duration.ofMinutes(5))
+                .expireAfterWrite(Duration.ofHours(24))
                 .recordStats()
                 .build();
         this.reverseTickerCache = Caffeine.newBuilder()
                 .maximumSize(10000)
-                .expireAfterWrite(Duration.ofMinutes(5))
+                .expireAfterWrite(Duration.ofHours(24))
                 .recordStats()
                 .build();
     }
