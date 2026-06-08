@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: globeco-execution-service
+  namespace: globeco
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: globeco-execution-service
+  template:
+    metadata:
+      labels:
+        app: globeco-execution-service
+    spec:
+      containers:
+        - name: globeco-execution-service
+          image: kasbench/globeco-execution-service:1.0.3
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8084
+          env:
+            # Inject the node IP from the Downward API
+            - name: NODE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            # Point OTEL exporter to the local collector on the same node
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://$(NODE_IP):4317"
+            # Override OTLP metrics export URL to use host networking
+            - name: MANAGEMENT_OTLP_METRICS_EXPORT_URL
+              value: "http://$(NODE_IP):4318/v1/metrics"
+            # Override OTLP tracing endpoint to use host networking
+            - name: MANAGEMENT_OTLP_TRACING_ENDPOINT
+              value: "http://$(NODE_IP):4318/v1/traces"
+            - name: DEBUG_LEVEL
+              value: "INFO"
+          resources:
+            requests:
+              cpu: 720m
+              memory: 500Mi
+            limits:
+              cpu: 720m
+              memory: 500Mi
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8084
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 240
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8084
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          startupProbe:
+            httpGet:
+              path: /actuator/health/readiness  
+              port: 8084
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+      restartPolicy: Always
+---
