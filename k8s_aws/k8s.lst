@@ -1,4 +1,4 @@
 postgresql-persistent-volume-claim.yaml
-postgresql-deployment
+postgresql-deployment.yaml
 deployment.yaml
 service.yaml
