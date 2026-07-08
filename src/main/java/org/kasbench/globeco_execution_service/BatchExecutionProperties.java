@@ -1,6 +1,7 @@
 package org.kasbench.globeco_execution_service;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
@@ -14,6 +15,7 @@ import jakarta.validation.constraints.NotNull;
  * Provides configurable parameters for bulk operations, retry policies, and performance tuning.
  */
 @Component
+@Lazy(false) // Must be eager - required by ConnectionPoolConfiguration at startup
 @ConfigurationProperties(prefix = "batch.execution")
 @Validated
 public class BatchExecutionProperties {

@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Primary;
 
 import javax.sql.DataSource;
@@ -18,6 +19,7 @@ import javax.sql.DataSource;
  * Provides enhanced connection pool configuration with monitoring and performance tuning.
  */
 @Configuration
+@Lazy(false) // Must be eager - DataSource is required by Flyway and Hibernate at startup
 public class ConnectionPoolConfiguration {
 
     private static final Logger logger = LoggerFactory.getLogger(ConnectionPoolConfiguration.class);
@@ -48,7 +50,10 @@ public class ConnectionPoolConfiguration {
         
         // Pool size optimization for bulk operations
         config.setMaximumPoolSize(dbProps.getMaxPoolSize());
-        config.setMinimumIdle(Math.max(2, dbProps.getMaxPoolSize() / 4)); // 25% of max pool size, minimum 2
+        config.setMinimumIdle(1); // Start with 1 connection, scale up under load
+        
+        // Don't block startup waiting for initial connection
+        config.setInitializationFailTimeout(0);
         
         // Connection timeout settings optimized for bulk operations
         config.setConnectionTimeout(dbProps.getConnectionTimeout());
