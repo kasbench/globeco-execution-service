@@ -13,9 +13,13 @@ spec:
       labels:
         app: globeco-execution-service
     spec:
+      initContainers:
+        - name: wait-for-kafka
+          image: busybox:1.36
+          command: ['sh', '-c', 'until nc -z globeco-execution-service-kafka 9092; do echo "Waiting for Kafka..."; sleep 2; done']
       containers:
         - name: globeco-execution-service
-          image: kasbench/globeco-execution-service:1.0.6
+          image: kasbench/globeco-execution-service:1.0.7
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8084
